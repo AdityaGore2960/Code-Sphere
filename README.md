@@ -1,3 +1,4 @@
+
 # CodeSphere - Developer Social Platform
 
 A modern, full-stack social platform for developers built with the MERN stack.
@@ -73,3 +74,4 @@ A modern, full-stack social platform for developers built with the MERN stack.
 - `POST /api/posts/like/:id`: Like or unlike a post.
 - `POST /api/posts/comment/:id`: Add a comment to a post.
 - `GET /api/posts/projects?tech=...`: Filter projects by tech stack.
+
