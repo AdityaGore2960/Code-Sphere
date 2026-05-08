@@ -1,6 +1,7 @@
 const Post = require('../models/Post');
 const User = require('../models/User');
 const Repo = require('../models/Repo');
+const Notification = require('../models/Notification');
 const cloudinary = require('cloudinary').v2;
 
 // Configure Cloudinary
@@ -13,107 +14,173 @@ cloudinary.config({
 // @desc    Create post
 // @route   POST /api/posts
 const createPost = async (req, res) => {
-  console.log('--- Create Post Debug ---');
-  console.log('Body:', req.body);
-  console.log('File:', req.file ? req.file.originalname : 'No file');
+  console.log('--- Create Post Debug Start ---');
+  console.log('Request Body:', req.body);
+  console.log('Files Received:', req.files ? Object.keys(req.files) : 'None');
 
   try {
     let imageUrl = '';
+    let imagesUrls = [];
+    let videoUrl = '';
 
-    // Handle File Upload
-    if (req.file) {
-      try {
-        const isCloudinaryConfigured = process.env.CLOUDINARY_CLOUD_NAME && !process.env.CLOUDINARY_CLOUD_NAME.includes('your_');
+    const isCloudinaryConfigured = process.env.CLOUDINARY_CLOUD_NAME && 
+                                  !process.env.CLOUDINARY_CLOUD_NAME.includes('your_') &&
+                                  process.env.CLOUDINARY_API_KEY &&
+                                  !process.env.CLOUDINARY_API_KEY.includes('your_');
 
-        if (isCloudinaryConfigured) {
-          console.log('Uploading file to Cloudinary...');
-          // Use stream for buffer if needed, but here we use simple upload
-          const b64 = Buffer.from(req.file.buffer).toString('base64');
-          let dataURI = "data:" + req.file.mimetype + ";base64," + b64;
-          const uploadResponse = await cloudinary.uploader.upload(dataURI, {
-            folder: 'codesphere_posts'
-          });
+    if (req.files) {
+      if (isCloudinaryConfigured) {
+        // Handle single image
+        if (req.files['image']) {
+          const file = req.files['image'][0];
+          const b64 = Buffer.from(file.buffer).toString('base64');
+          const dataURI = "data:" + file.mimetype + ";base64," + b64;
+          const uploadResponse = await cloudinary.uploader.upload(dataURI, { folder: 'codesphere_posts' });
           imageUrl = uploadResponse.secure_url;
-        } else {
-          // Fallback to base64 if no cloudinary
-          const b64 = Buffer.from(req.file.buffer).toString('base64');
-          imageUrl = "data:" + req.file.mimetype + ";base64," + b64;
         }
-      } catch (cloudErr) {
-        console.error('Cloudinary Upload Error:', cloudErr);
-        // Final fallback to base64
-        const b64 = Buffer.from(req.file.buffer).toString('base64');
-        imageUrl = "data:" + req.file.mimetype + ";base64," + b64;
+
+        // Handle multiple images (screenshots)
+        if (req.files['images']) {
+          for (const file of req.files['images']) {
+            const b64 = Buffer.from(file.buffer).toString('base64');
+            const dataURI = "data:" + file.mimetype + ";base64," + b64;
+            const uploadResponse = await cloudinary.uploader.upload(dataURI, { folder: 'codesphere_posts' });
+            imagesUrls.push(uploadResponse.secure_url);
+          }
+        }
+
+        // Handle video
+        if (req.files['video']) {
+          const file = req.files['video'][0];
+          const b64 = Buffer.from(file.buffer).toString('base64');
+          const dataURI = "data:" + file.mimetype + ";base64," + b64;
+          const uploadResponse = await cloudinary.uploader.upload(dataURI, { 
+            folder: 'codesphere_videos',
+            resource_type: 'video' 
+          });
+          videoUrl = uploadResponse.secure_url;
+        }
+      } else {
+        console.warn('Cloudinary not configured. Skipping file uploads.');
       }
-    } else if (req.body.image) {
-      imageUrl = req.body.image;
     }
 
-    // Parse techStack and event if they are strings (from FormData)
+    // Ensure content is present (Mongoose required field)
+    const postContent = req.body.content || (req.body.isProject === 'true' ? 'New project showcase!' : 'Shared a new update.');
+
     let techStack = req.body.techStack || [];
     if (typeof techStack === 'string') {
-      try { techStack = JSON.parse(techStack); } catch (e) { techStack = [techStack]; }
+      try { techStack = JSON.parse(techStack); } catch (e) { techStack = techStack.split(',').map(s => s.trim()); }
     }
 
     let event = req.body.event;
-    if (typeof event === 'string') {
+    if (typeof event === 'string' && event.trim()) {
       try { event = JSON.parse(event); } catch (e) { event = null; }
     }
 
-    const post = await Post.create({
+    // Extract tags from content (hashtags)
+    const contentTags = postContent.match(/#(\w+)/g)?.map(tag => tag.substring(1).toLowerCase()) || [];
+    
+    // Merge with techStack if project
+    const allTags = [...new Set([...contentTags, ...(Array.isArray(techStack) ? techStack : [])])];
+
+    const postData = {
       user: req.user._id,
-      content: req.body.content,
-      image: imageUrl,
+      content: postContent,
+      image: imageUrl || '',
+      images: imagesUrls,
+      tags: allTags,
       isProject: req.body.isProject === 'true' || req.body.isProject === true,
-      techStack: techStack,
+      techStack: Array.isArray(techStack) ? techStack : [],
       githubLink: req.body.githubLink || '',
       demoLink: req.body.demoLink || '',
-      repository: req.body.repository,
-      video: req.body.video,
-      event: event
-    });
+      repository: req.body.repository && req.body.repository !== 'undefined' ? req.body.repository : undefined,
+      video: videoUrl || '',
+      event: event && event.title ? event : undefined
+    };
+
+    console.log('Post Data to Save:', postData);
+
+    const post = await Post.create(postData);
 
     const populatedPost = await Post.findById(post._id).populate([
       { path: 'user', select: 'username profilePic' },
       { path: 'repository' }
     ]);
 
+    console.log('--- Create Post Success ---');
     res.status(201).json(populatedPost);
   } catch (error) {
-    console.error('Create Post Error:', error);
-    res.status(500).json({ message: error.message });
+    console.error('--- Create Post Error ---');
+    console.error(error);
+    res.status(500).json({ 
+      message: 'Internal Server Error while creating post',
+      error: error.message,
+      stack: process.env.NODE_ENV === 'production' ? null : error.stack
+    });
   }
 };
+
 
 // @desc    Get feed posts (following)
 // @route   GET /api/posts
 const getFeed = async (req, res) => {
-  console.log('--- Get Feed Debug ---');
-  console.log('User ID:', req.user?._id);
-
   try {
     const currentUser = await User.findById(req.user._id);
-    if (!currentUser) {
-      console.log('Current user not found in DB');
-      return res.status(404).json({ message: 'User not found' });
-    }
+    if (!currentUser) return res.status(404).json({ message: 'User not found' });
 
-    console.log('Following count:', currentUser.following?.length);
+    const followingIds = currentUser.following || [];
+    const userInterests = [...new Set([...(currentUser.interests || []), ...(currentUser.skills || [])])];
 
-    const posts = await Post.find({
-      $or: [
-        { user: { $in: currentUser.following || [] } },
-        { user: req.user._id }
-      ]
+    // Fetch posts from the last 7 days to keep feed fresh
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+    // Get all potential candidate posts
+    let posts = await Post.find({
+      createdAt: { $gte: oneWeekAgo }
     })
-      .sort({ createdAt: -1 })
       .populate('user', 'username profilePic')
       .populate('repository');
-    
-    console.log('Posts found:', posts.length);
-    res.json(posts);
+
+    // Calculate Smart Score for each post
+    const scoredPosts = posts.map(post => {
+      let score = 0;
+      const hoursOld = (new Date() - new Date(post.createdAt)) / (1000 * 60 * 60);
+
+      // 1. Following Factor (+15 pts)
+      if (followingIds.includes(post.user._id.toString()) || post.user._id.toString() === req.user._id.toString()) {
+        score += 15;
+      }
+
+      // 2. Interest Factor (+8 pts per matching tag)
+      if (post.tags && post.tags.length > 0 && userInterests.length > 0) {
+        const matches = post.tags.filter(tag => userInterests.includes(tag.toLowerCase())).length;
+        score += matches * 8;
+      }
+
+      // 3. Trending/Engagement Factor (Likes weighted by age)
+      const engagement = (post.likes?.length || 0) + (post.comments?.length || 0) * 2;
+      const trendingBoost = engagement / Math.pow(hoursOld + 2, 1.2);
+      score += trendingBoost * 10;
+
+      // 4. Recency Bonus
+      score += (1 / (hoursOld + 1)) * 20;
+
+      // Convert to plain object to attach score for sorting
+      const postObj = post.toObject();
+      postObj.relevanceScore = score;
+      return postObj;
+    });
+
+    // Sort by score and take top 50
+    const sortedPosts = scoredPosts
+      .sort((a, b) => b.relevanceScore - a.relevanceScore)
+      .slice(0, 50);
+
+    res.json(sortedPosts);
   } catch (error) {
-    console.error('Get Feed Error:', error);
+    console.error('Smart Feed Error:', error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -137,11 +204,21 @@ const getExplore = async (req, res) => {
 const likePost = async (req, res) => {
   try {
     const post = await Post.findById(req.params.id);
-    if (post.likes.includes(req.user._id)) {
-      post.likes = post.likes.filter(id => id.toString() !== req.user._id.toString());
-    } else {
+    if (!post.likes.includes(req.user._id)) {
       post.likes.push(req.user._id);
+      // Create Notification
+      if (post.user.toString() !== req.user._id.toString()) {
+        await Notification.create({
+          recipient: post.user,
+          sender: req.user._id,
+          type: 'like',
+          post: post._id
+        });
+      }
+    } else {
+      post.likes = post.likes.filter(id => id.toString() !== req.user._id.toString());
     }
+
     await post.save();
     res.json(post.likes);
   } catch (error) {
@@ -160,6 +237,17 @@ const addComment = async (req, res) => {
     };
     post.comments.push(comment);
     await post.save();
+
+    // Create Notification
+    if (post.user.toString() !== req.user._id.toString()) {
+      await Notification.create({
+        recipient: post.user,
+        sender: req.user._id,
+        type: 'comment',
+        post: post._id
+      });
+    }
+
     const updatedPost = await Post.findById(req.params.id).populate('comments.user', 'username profilePic');
     res.json(updatedPost.comments);
   } catch (error) {

@@ -41,7 +41,7 @@ const Register = () => {
               value={username} 
               onChange={(e) => setUsername(e.target.value)} 
               required 
-              placeholder="johndoe" 
+              placeholder="Enter your username" 
             />
           </div>
           <div className="input-group">
@@ -53,7 +53,7 @@ const Register = () => {
               value={email} 
               onChange={(e) => setEmail(e.target.value)} 
               required 
-              placeholder="dev@example.com" 
+              placeholder="Enter your email" 
             />
           </div>
           <div className="input-group">
@@ -65,7 +65,7 @@ const Register = () => {
               value={password} 
               onChange={(e) => setPassword(e.target.value)} 
               required 
-              placeholder="••••••••" 
+              placeholder="Enter your password" 
             />
           </div>
           <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }}>

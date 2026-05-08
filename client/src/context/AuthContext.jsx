@@ -23,14 +23,14 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (email, password) => {
-    const { data } = await axios.post('/auth/login', { email, password });
+    const { data } = await axios.post('auth/login', { email, password });
     setUser(data);
     localStorage.setItem('user', JSON.stringify(data));
     axios.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
   };
 
   const register = async (username, email, password) => {
-    const { data } = await axios.post('/auth/register', { username, email, password });
+    const { data } = await axios.post('auth/register', { username, email, password });
     setUser(data);
     localStorage.setItem('user', JSON.stringify(data));
     axios.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
@@ -44,7 +44,7 @@ export const AuthProvider = ({ children }) => {
 
   const updateProfile = async (profileData) => {
     // If profileData is FormData, axios automatically handles the content-type
-    const { data } = await axios.put('/users/profile', profileData);
+    const { data } = await axios.put('users/profile', profileData);
     
     // Support both direct user object and { success, user } structure from server
     const updatedUserObj = data.user || data;

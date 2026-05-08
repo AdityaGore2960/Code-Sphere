@@ -2,9 +2,13 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import PostCard from '../components/PostCard';
-import { Image, Video, Calendar, Newspaper, Search, UserPlus, Info, MoreHorizontal, Smile, Share2, MessageCircle, Heart, Book, X, ChevronDown, Users } from 'lucide-react';
+import { Image, Video, Calendar, Newspaper, Search, UserPlus, Info, MoreHorizontal, Smile, Share2, MessageCircle, Heart, Book, X, ChevronDown, Users, Layout } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import CodingChallenge from '../components/CodingChallenge';
+import Leaderboard from '../components/Leaderboard';
+import JobBoard from '../components/JobBoard';
+import LivePresence from '../components/LivePresence';
 
 const Home = () => {
   const { user } = useAuth();
@@ -13,15 +17,19 @@ const Home = () => {
   const [loading, setLoading] = useState(true);
   const [userRepos, setUserRepos] = useState([]);
   const [selectedRepo, setSelectedRepo] = useState(null);
-  const [image, setImage] = useState('');
-  const [imageFile, setImageFile] = useState(null);
-  const [imagePreview, setImagePreview] = useState('');
-  const [video, setVideo] = useState('');
+  const [imageFiles, setImageFiles] = useState([]);
+  const [imagePreviews, setImagePreviews] = useState([]);
+  const [videoFile, setVideoFile] = useState(null);
+  const [videoPreview, setVideoPreview] = useState('');
   const [event, setEvent] = useState({ title: '', date: '' });
   const [attachmentType, setAttachmentType] = useState(null); // 'image', 'video', 'event', 'repo'
   const [isRepoSelectorOpen, setIsRepoSelectorOpen] = useState(false);
   const [isPostModalOpen, setIsPostModalOpen] = useState(false);
   const [suggestedUsers, setSuggestedUsers] = useState([]);
+  const [githubLink, setGithubLink] = useState('');
+  const [demoLink, setDemoLink] = useState('');
+  const [techStack, setTechStack] = useState('');
+  const [isPosting, setIsPosting] = useState(false);
 
   const fetchPosts = async () => {
     try {
@@ -76,14 +84,23 @@ const Home = () => {
     fetchSuggestions();
   }, []);
 
-  const handleImageFileChange = (e) => {
+  const handleImageFilesChange = (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length > 0) {
+      setImageFiles(prev => [...prev, ...files].slice(0, 5));
+      files.forEach(file => {
+        const reader = new FileReader();
+        reader.onloadend = () => setImagePreviews(prev => [...prev, reader.result].slice(0, 5));
+        reader.readAsDataURL(file);
+      });
+    }
+  };
+
+  const handleVideoFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      setImageFile(file);
-      setImage('');
-      const reader = new FileReader();
-      reader.onloadend = () => setImagePreview(reader.result);
-      reader.readAsDataURL(file);
+      setVideoFile(file);
+      setVideoPreview(URL.createObjectURL(file));
     }
   };
 
@@ -93,15 +110,14 @@ const Home = () => {
     if (
       !content.trim() &&
       !selectedRepo &&
-      !imageFile &&
-      !video &&
+      imageFiles.length === 0 &&
+      !videoFile &&
       !event.title
     ) return;
 
     try {
-
+      setIsPosting(true);
       const formData = new FormData();
-
       formData.append('content', content);
 
       if (selectedRepo && selectedRepo._id) {
@@ -109,48 +125,54 @@ const Home = () => {
         formData.append('isProject', 'true');
       }
 
-      if (imageFile) {
-        formData.append('image', imageFile);
+      if (imageFiles.length > 0) {
+        if (imageFiles.length === 1) {
+          formData.append('image', imageFiles[0]);
+        }
+        imageFiles.forEach(file => {
+          formData.append('images', file);
+        });
       }
 
-      if (video) {
-        formData.append('video', video);
+      if (videoFile) {
+        formData.append('video', videoFile);
       }
 
       if (event.title) {
         formData.append('event', JSON.stringify(event));
       }
 
-      const token = localStorage.getItem('token');
+      if (attachmentType === 'project') {
+        formData.append('isProject', 'true');
+        formData.append('githubLink', githubLink);
+        formData.append('demoLink', demoLink);
+        formData.append('techStack', JSON.stringify(techStack.split(',').map(s => s.trim()).filter(Boolean)));
+      }
 
-      const { data } = await axios.post(
-        '/api/posts',
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'multipart/form-data'
-          }
-        }
-      );
+      const { data } = await axios.post('/posts', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
 
       setPosts([data, ...posts]);
 
       setContent('');
       setSelectedRepo(null);
-      setImage('');
-      setImageFile(null);
-      setImagePreview('');
-      setVideo('');
+      setImageFiles([]);
+      setImagePreviews([]);
+      setVideoFile(null);
+      setVideoPreview('');
       setEvent({ title: '', date: '' });
       setAttachmentType(null);
+      setGithubLink('');
+      setDemoLink('');
+      setTechStack('');
       setIsPostModalOpen(false);
 
     } catch (err) {
-
       console.error(err);
-
-      console.log(err.response?.data);
+      alert('Failed to create post. Please try again.');
+    } finally {
+      setIsPosting(false);
     }
   };
 
@@ -197,6 +219,8 @@ const Home = () => {
           </div>
           <p style={{ marginTop: '0.5rem', cursor: 'pointer' }}>Followed Hashtags</p>
         </div>
+
+        <JobBoard />
       </aside>
 
       {/* Main Column: Feed */}
@@ -229,6 +253,9 @@ const Home = () => {
             </button>
             <button onClick={() => { setIsPostModalOpen(true); setAttachmentType('repo'); }} className="post-tool-btn" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem', borderRadius: '4px', cursor: 'pointer' }}>
               <Book size={20} color="#c37d16" /> <span style={{ fontSize: '0.85rem', color: 'var(--text-light)', fontWeight: 600 }}>Repository</span>
+            </button>
+            <button onClick={() => { setIsPostModalOpen(true); setAttachmentType('project'); }} className="post-tool-btn" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem', borderRadius: '4px', cursor: 'pointer' }}>
+              <Layout size={20} color="#9333ea" /> <span style={{ fontSize: '0.85rem', color: 'var(--text-light)', fontWeight: 600 }}>Showcase</span>
             </button>
           </div>
         </div>
@@ -283,17 +310,14 @@ const Home = () => {
                   <AnimatePresence>
                     {attachmentType === 'image' && (
                       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="input-group">
-                        <label htmlFor="post-image-file">Upload Image</label>
-                        <input type="file" id="post-image-file" name="imageFile" accept="image/*" onChange={handleImageFileChange} />
-                        <div style={{ margin: '0.5rem 0', textAlign: 'center', color: 'var(--text-light)', fontSize: '0.8rem' }}>— OR —</div>
-                        <label htmlFor="post-image-url">Image URL</label>
-                        <input type="text" id="post-image-url" name="image" value={image} onChange={(e) => { setImage(e.target.value); setImageFile(null); setImagePreview(e.target.value); }} placeholder="https://..." />
+                        <label htmlFor="post-image-files">Upload Images (Max 5)</label>
+                        <input type="file" id="post-image-files" name="imageFiles" accept="image/*" multiple onChange={handleImageFilesChange} />
                       </motion.div>
                     )}
                     {attachmentType === 'video' && (
                       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="input-group">
-                        <label htmlFor="post-video-url">Video URL (YouTube/MP4)</label>
-                        <input type="text" id="post-video-url" name="video" value={video} onChange={(e) => setVideo(e.target.value)} placeholder="https://..." />
+                        <label htmlFor="post-video-file">Upload Video</label>
+                        <input type="file" id="post-video-file" name="videoFile" accept="video/*" onChange={handleVideoFileChange} />
                       </motion.div>
                     )}
                     {attachmentType === 'event' && (
@@ -322,6 +346,26 @@ const Home = () => {
                         ))}
                       </motion.div>
                     )}
+                    {attachmentType === 'project' && (
+                      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+                        <div className="input-group">
+                          <label>GitHub Repository Link</label>
+                          <input type="text" value={githubLink} onChange={(e) => setGithubLink(e.target.value)} placeholder="https://github.com/user/repo" />
+                        </div>
+                        <div className="input-group">
+                          <label>Live Demo Link</label>
+                          <input type="text" value={demoLink} onChange={(e) => setDemoLink(e.target.value)} placeholder="https://my-project.vercel.app" />
+                        </div>
+                        <div className="input-group">
+                          <label>Tech Stack (comma separated)</label>
+                          <input type="text" value={techStack} onChange={(e) => setTechStack(e.target.value)} placeholder="React, Node.js, MongoDB" />
+                        </div>
+                        <div className="input-group">
+                          <label>Project Screenshots (Max 5)</label>
+                          <input type="file" multiple accept="image/*" onChange={handleImageFilesChange} />
+                        </div>
+                      </motion.div>
+                    )}
                   </AnimatePresence>
 
                   {/* Attachment Previews */}
@@ -335,22 +379,29 @@ const Home = () => {
                         </div>
                       </div>
                     )}
-                    {(imagePreview || image) && (
-                      <div style={{ position: 'relative', borderRadius: '10px', overflow: 'hidden', border: '1px solid var(--border)' }}>
-                        <X size={16} onClick={() => { setImage(''); setImageFile(null); setImagePreview(''); }} style={{ position: 'absolute', right: '0.5rem', top: '0.5rem', cursor: 'pointer', background: 'white', borderRadius: '50%', padding: '2px', zIndex: 10 }} />
-                        <img src={imagePreview || image} crossOrigin="anonymous" style={{ width: '100%', maxHeight: '200px', objectFit: 'cover' }} alt="Preview" onError={(e) => { e.target.style.display = 'none'; }} />
+                    
+                    {imagePreviews.length > 0 && (
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '0.5rem', position: 'relative' }}>
+                         <button 
+                            onClick={() => { setImageFiles([]); setImagePreviews([]); }}
+                            style={{ position: 'absolute', right: '-10px', top: '-10px', background: 'white', border: '1px solid var(--border)', borderRadius: '50%', padding: '4px', zIndex: 20, cursor: 'pointer' }}>
+                            <X size={14} />
+                         </button>
+                         {imagePreviews.map((prev, idx) => (
+                           <div key={idx} style={{ borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border)', height: '100px' }}>
+                             <img src={prev} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="Preview" />
+                           </div>
+                         ))}
                       </div>
                     )}
-                    {video && (
+
+                    {videoPreview && (
                       <div style={{ position: 'relative', borderRadius: '10px', overflow: 'hidden', border: '1px solid var(--border)', background: '#000' }}>
-                        <X size={16} onClick={() => setVideo('')} style={{ position: 'absolute', right: '0.5rem', top: '0.5rem', cursor: 'pointer', background: 'white', borderRadius: '50%', padding: '2px', zIndex: 10 }} />
-                        {video.includes('youtube.com') || video.includes('youtu.be') ? (
-                          <iframe width="100%" height="200" src={`https://www.youtube.com/embed/${video.split('v=')[1]?.split('&')[0] || video.split('/').pop()}`} frameBorder="0" allowFullScreen></iframe>
-                        ) : (
-                          <video src={video} style={{ width: '100%', maxHeight: '200px' }} controls />
-                        )}
+                        <X size={16} onClick={() => { setVideoFile(null); setVideoPreview(''); }} style={{ position: 'absolute', right: '0.5rem', top: '0.5rem', cursor: 'pointer', background: 'white', borderRadius: '50%', padding: '2px', zIndex: 10 }} />
+                        <video src={videoPreview} style={{ width: '100%', maxHeight: '200px' }} controls />
                       </div>
                     )}
+
                     {event.title && (
                       <div style={{ padding: '0.75rem', background: 'var(--bg)', borderRadius: '8px', border: '1px solid var(--primary)', position: 'relative' }}>
                         <X size={16} onClick={() => setEvent({ title: '', date: '' })} style={{ position: 'absolute', right: '0.5rem', top: '0.5rem', cursor: 'pointer' }} />
@@ -373,30 +424,40 @@ const Home = () => {
                     <Video size={24} color={attachmentType === 'video' ? 'var(--primary)' : 'var(--text-light)'} style={{ cursor: 'pointer' }} onClick={() => setAttachmentType('video')} />
                     <Book size={24} color={attachmentType === 'repo' ? 'var(--primary)' : 'var(--text-light)'} style={{ cursor: 'pointer' }} onClick={() => setAttachmentType('repo')} />
                     <Calendar size={24} color={attachmentType === 'event' ? 'var(--primary)' : 'var(--text-light)'} style={{ cursor: 'pointer' }} onClick={() => setAttachmentType('event')} />
+                    <Layout size={24} color={attachmentType === 'project' ? 'var(--primary)' : 'var(--text-light)'} style={{ cursor: 'pointer' }} onClick={() => setAttachmentType('project')} />
                     <Smile size={24} color="var(--text-light)" style={{ cursor: 'pointer' }} />
                   </div>
                   <button
-                    disabled={!content.trim() && !selectedRepo && !image && !video && !event.title}
+                    disabled={isPosting || (!content.trim() && !selectedRepo && imageFiles.length === 0 && !videoFile && !event.title)}
                     onClick={handlePost}
                     style={{
                       padding: '0.5rem 1.5rem',
                       borderRadius: '20px',
-                      background: (!content.trim() && !selectedRepo && !image && !video && !event.title) ? 'var(--border)' : 'var(--primary)',
+                      background: (isPosting || (!content.trim() && !selectedRepo && imageFiles.length === 0 && !videoFile && !event.title)) ? 'var(--border)' : 'var(--primary)',
                       color: 'white',
                       fontWeight: 700,
                       border: 'none',
-                      cursor: 'pointer'
+                      cursor: 'pointer',
+                      opacity: isPosting ? 0.7 : 1
                     }}
                   >
-                    Post
+                    {isPosting ? 'Posting...' : 'Post'}
                   </button>
                 </div>
+
               </motion.div>
             </div>
           )}
         </AnimatePresence>
 
         {/* Posts Feed */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+          <div style={{ flex: 1, height: '1px', background: 'var(--border)' }}></div>
+          <span style={{ fontSize: '0.75rem', color: 'var(--text-light)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+            Sort by: <span style={{ color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '2px', cursor: 'pointer' }}>Smart Feed <ChevronDown size={14} /></span>
+          </span>
+        </div>
+
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {loading ? (
             <div style={{ textAlign: 'center', padding: '3rem' }}>Loading feed...</div>
@@ -408,8 +469,10 @@ const Home = () => {
         </div>
       </main>
 
-      {/* Right Sidebar: Suggestions */}
-      <aside style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+      {/* Right Sidebar: Challenges & Suggestions */}
+      <aside style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        <CodingChallenge />
+
         <div className="card" style={{ padding: '1rem', border: '1px solid var(--border)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
             <h3 style={{ fontSize: '1rem', fontWeight: 700 }}>Add to your feed</h3>
@@ -422,24 +485,24 @@ const Home = () => {
                 <Link to={`/profile/${u.username}`}>
                   <img
                     src={u.profilePic || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.username}`}
-                    style={{ width: '48px', height: '48px', borderRadius: '50%' }}
+                    style={{ width: '40px', height: '40px', borderRadius: '50%' }}
                     alt=""
                   />
                 </Link>
                 <div style={{ flex: 1 }}>
-                  <h4 style={{ fontSize: '0.9rem', fontWeight: 700 }}>{u.username}</h4>
-                  <p style={{ fontSize: '0.75rem', color: 'var(--text-light)', marginBottom: '0.5rem' }}>{u.bio || 'CodeSphere User'}</p>
+                  <h4 style={{ fontSize: '0.85rem', fontWeight: 700 }}>{u.username}</h4>
+                  <p style={{ fontSize: '0.7rem', color: 'var(--text-light)', marginBottom: '0.5rem', lineClamp: 1, overflow: 'hidden' }}>{u.bio || 'CodeSphere User'}</p>
                   <button
                     onClick={() => handleFollowSuggestion(u._id)}
                     className="btn btn-outline"
                     style={{
-                      padding: '0.25rem 1rem',
+                      padding: '0.2rem 0.8rem',
                       borderRadius: '20px',
-                      fontSize: '0.85rem',
+                      fontSize: '0.75rem',
                       fontWeight: 600,
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '0.4rem',
+                      gap: '0.3rem',
                       color: u.isFollowing ? 'var(--text-light)' : 'var(--primary)'
                     }}
                   >
@@ -449,28 +512,36 @@ const Home = () => {
               </div>
             ))}
           </div>
-
-          <button style={{ marginTop: '1rem', width: '100%', textAlign: 'left', padding: '0.5rem', fontSize: '0.9rem', color: 'var(--text-light)', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            View all recommendations <ChevronRight size={16} />
-          </button>
         </div>
 
+        <Leaderboard />
+
+        <LivePresence />
+
         <div className="card" style={{ padding: '1rem', border: '1px solid var(--border)' }}>
-          <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1rem' }}>CodeSphere News</h3>
-          <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            <li>
-              <p style={{ fontSize: '0.9rem', fontWeight: 700 }}>The state of JS in 2026</p>
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-light)' }}>2d ago • 4,521 readers</p>
-            </li>
-            <li>
-              <p style={{ fontSize: '0.9rem', fontWeight: 700 }}>AI Agents are the new CLI</p>
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-light)' }}>1d ago • 12,890 readers</p>
-            </li>
-            <li>
-              <p style={{ fontSize: '0.9rem', fontWeight: 700 }}>Remote work trends 2026</p>
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-light)' }}>5h ago • 845 readers</p>
-            </li>
-          </ul>
+          <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1rem' }}>Trending Topics</h3>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+            {['#javascript', '#react', '#webdev', '#opensource', '#ai', '#node', '#coding'].map(tag => (
+              <span key={tag} style={{ 
+                padding: '0.3rem 0.8rem', 
+                background: 'var(--primary-light)', 
+                color: 'var(--primary)', 
+                borderRadius: '15px', 
+                fontSize: '0.8rem', 
+                fontWeight: 600,
+                cursor: 'pointer'
+              }}>
+                {tag}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ padding: '0 1rem', fontSize: '0.7rem', color: 'var(--text-light)', display: 'flex', flexWrap: 'wrap', gap: '0.75rem', justifyContent: 'center' }}>
+          <span>About</span>
+          <span>Help Center</span>
+          <span>Privacy & Terms</span>
+          <p style={{ width: '100%', textAlign: 'center', marginTop: '0.5rem', fontWeight: 700, color: 'var(--primary)' }}>CodeSphere Corporation © 2026</p>
         </div>
       </aside>
     </div>

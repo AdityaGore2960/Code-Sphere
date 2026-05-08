@@ -1,7 +1,13 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ChatProvider } from './context/ChatContext';
+import { SocketProvider } from './context/SocketContext';
+import { CallProvider } from './context/CallContext';
+import CallManager from './components/CallManager';
 import Navbar from './components/Navbar';
+import MessagingDrawer from './components/MessagingDrawer';
+import AIAgent from './components/AIAgent';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -21,25 +27,35 @@ const ProtectedRoute = ({ children }) => {
 const App = () => {
   return (
     <AuthProvider>
-      <Router>
-        <Navbar />
-        <main className="container main-content">
-          <Routes>
-            <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/profile/:username" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-            <Route path="/showcase" element={<ProtectedRoute><Showcase /></ProtectedRoute>} />
-            <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
-            <Route path="/search" element={<ProtectedRoute><Search /></ProtectedRoute>} />
-            <Route path="/create-repo" element={<ProtectedRoute><CreateRepo /></ProtectedRoute>} />
-            <Route path="/repositories" element={<ProtectedRoute><Repositories /></ProtectedRoute>} />
-            <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
-          </Routes>
-        </main>
-      </Router>
+      <SocketProvider>
+        <CallProvider>
+          <ChatProvider>
+            <Router>
+              <Navbar />
+              <CallManager />
+              <main className="container main-content">
+                <Routes>
+                  <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/register" element={<Register />} />
+                  <Route path="/profile/:username" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+                  <Route path="/showcase" element={<ProtectedRoute><Showcase /></ProtectedRoute>} />
+                  <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+                  <Route path="/search" element={<ProtectedRoute><Search /></ProtectedRoute>} />
+                  <Route path="/create-repo" element={<ProtectedRoute><CreateRepo /></ProtectedRoute>} />
+                  <Route path="/repositories" element={<ProtectedRoute><Repositories /></ProtectedRoute>} />
+                  <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+                </Routes>
+              </main>
+              <MessagingDrawer />
+              <AIAgent />
+            </Router>
+          </ChatProvider>
+        </CallProvider>
+      </SocketProvider>
     </AuthProvider>
   );
 };
 
 export default App;
+

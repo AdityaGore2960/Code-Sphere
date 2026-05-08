@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const Notification = require('../models/Notification');
 const axios = require('axios');
 const cloudinary = require('../config/cloudinary');
 
@@ -20,72 +21,126 @@ const getProfile = async (req, res) => {
 // @desc    Update user profile
 // @route   PUT /api/users/profile
 const updateProfile = async (req, res) => {
-  console.log('--- Update Profile Debug ---');
-  console.log('User:', req.user?._id);
-  console.log('Body Fields:', Object.keys(req.body));
-  console.log('File:', req.file ? { name: req.file.originalname, size: req.file.size } : 'No file');
-
   try {
     const user = await User.findById(req.user._id);
     if (!user) return res.status(404).json({ message: 'User not found' });
 
     let profilePicUrl = user.profilePic;
+    let bannerUrl = user.banner;
 
-    // Handle File Upload (Multer)
-    if (req.file) {
-      try {
-        const isCloudinaryConfigured = process.env.CLOUDINARY_CLOUD_NAME && !process.env.CLOUDINARY_CLOUD_NAME.includes('your_');
-        const b64 = Buffer.from(req.file.buffer).toString("base64");
-        const dataURI = "data:" + req.file.mimetype + ";base64," + b64;
+    const isCloudinaryConfigured = process.env.CLOUDINARY_CLOUD_NAME && !process.env.CLOUDINARY_CLOUD_NAME.includes('your_');
 
-        if (isCloudinaryConfigured) {
-          console.log('Uploading profile pic to Cloudinary...');
-          const uploadResponse = await cloudinary.uploader.upload(dataURI, {
-            folder: 'codesphere_profiles'
-          });
-          profilePicUrl = uploadResponse.secure_url;
-        } else {
-          console.log('Cloudinary not configured, using base64 for profile pic...');
-          profilePicUrl = dataURI;
-        }
-      } catch (cloudErr) {
-        console.error('Cloudinary Profile Upload Error:', cloudErr);
-        // Fallback to base64 if possible
-        const b64 = Buffer.from(req.file.buffer).toString("base64");
-        profilePicUrl = "data:" + req.file.mimetype + ";base64," + b64;
+    // Handle File Uploads (Multer any)
+    if (req.files && Array.isArray(req.files)) {
+      const getFile = (name) => req.files.find(f => f.fieldname === name);
+
+      const profilePicFile = getFile('profilePic');
+      if (profilePicFile) {
+        const b64 = Buffer.from(profilePicFile.buffer).toString("base64");
+        const dataURI = "data:" + profilePicFile.mimetype + ";base64," + b64;
+        const uploadResponse = await cloudinary.uploader.upload(dataURI, { folder: 'codesphere_profiles' });
+        profilePicUrl = uploadResponse.secure_url;
+      }
+
+      const bannerFile = getFile('banner');
+      if (bannerFile) {
+        const b64 = Buffer.from(bannerFile.buffer).toString("base64");
+        const dataURI = "data:" + bannerFile.mimetype + ";base64," + b64;
+        const uploadResponse = await cloudinary.uploader.upload(dataURI, { folder: 'codesphere_banners' });
+        bannerUrl = uploadResponse.secure_url;
+      }
+
+      const resumeFile = getFile('resume');
+      if (resumeFile) {
+        const b64 = Buffer.from(resumeFile.buffer).toString("base64");
+        const dataURI = "data:" + resumeFile.mimetype + ";base64," + b64;
+        const uploadResponse = await cloudinary.uploader.upload(dataURI, { 
+          folder: 'codesphere_resumes',
+          resource_type: 'raw'
+        });
+        user.resume = uploadResponse.secure_url;
       }
     }
-    // Handle Base64 Upload (JSON)
-    else if (req.body.profilePic && req.body.profilePic.startsWith('data:image')) {
-      try {
-        const isCloudinaryConfigured = process.env.CLOUDINARY_CLOUD_NAME && !process.env.CLOUDINARY_CLOUD_NAME.includes('your_');
 
-        if (isCloudinaryConfigured) {
-          console.log('Uploading base64 to Cloudinary...');
-          const uploadResponse = await cloudinary.uploader.upload(req.body.profilePic, {
-            folder: 'codesphere_profiles'
-          });
-          profilePicUrl = uploadResponse.secure_url;
-        } else {
-          profilePicUrl = req.body.profilePic;
-        }
-      } catch (cloudErr) {
-        console.error('Cloudinary Base64 Upload Error:', cloudErr);
+    // Handle Base64 fallbacks for profilePic
+    if (req.body.profilePic && req.body.profilePic.startsWith('data:image')) {
+      if (isCloudinaryConfigured) {
+        const uploadResponse = await cloudinary.uploader.upload(req.body.profilePic, { folder: 'codesphere_profiles' });
+        profilePicUrl = uploadResponse.secure_url;
+      } else {
         profilePicUrl = req.body.profilePic;
       }
-    } else if (req.body.profilePic !== undefined) {
+    } else if (req.body.profilePic) {
       profilePicUrl = req.body.profilePic;
     }
 
+    // Handle Base64 fallbacks for banner
+    if (req.body.banner && req.body.banner.startsWith('data:image')) {
+      if (isCloudinaryConfigured) {
+        const uploadResponse = await cloudinary.uploader.upload(req.body.banner, { folder: 'codesphere_banners' });
+        bannerUrl = uploadResponse.secure_url;
+      } else {
+        bannerUrl = req.body.banner;
+      }
+    } else if (req.body.banner) {
+      bannerUrl = req.body.banner;
+    }
+
     user.profilePic = profilePicUrl;
+    user.banner = bannerUrl;
 
     user.name = req.body.name !== undefined ? req.body.name : user.name;
+    user.headline = req.body.headline !== undefined ? req.body.headline : user.headline;
     user.bio = req.body.bio !== undefined ? req.body.bio : user.bio;
     user.pronouns = req.body.pronouns !== undefined ? req.body.pronouns : user.pronouns;
-    user.skills = req.body.skills !== undefined ? req.body.skills : user.skills;
+    
+    // Parse complex fields
+    if (req.body.experience) {
+      user.experience = typeof req.body.experience === 'string' ? JSON.parse(req.body.experience) : req.body.experience;
+    }
+    if (req.body.education) {
+      user.education = typeof req.body.education === 'string' ? JSON.parse(req.body.education) : req.body.education;
+    }
+    if (req.body.skills) {
+      user.skills = typeof req.body.skills === 'string' ? JSON.parse(req.body.skills) : req.body.skills;
+    }
+
+    // Handle Certifications and their potential files
+    if (req.body.certifications) {
+      let certs = typeof req.body.certifications === 'string' ? JSON.parse(req.body.certifications) : req.body.certifications;
+      
+      if (req.files && Array.isArray(req.files)) {
+        for (let i = 0; i < certs.length; i++) {
+          const fieldName = `certFile_${i}`;
+          const certFile = req.files.find(f => f.fieldname === fieldName);
+          if (certFile) {
+            const b64 = Buffer.from(certFile.buffer).toString("base64");
+            const dataURI = "data:" + certFile.mimetype + ";base64," + b64;
+            const uploadResponse = await cloudinary.uploader.upload(dataURI, { 
+              folder: 'codesphere_certifications',
+              resource_type: 'raw'
+            });
+            certs[i].file = uploadResponse.secure_url;
+          }
+        }
+      }
+      user.certifications = certs;
+    }
+
+    const handlesChanged = 
+      (req.body.githubUsername !== undefined && req.body.githubUsername !== user.githubUsername) ||
+      (req.body.leetcodeUsername !== undefined && req.body.leetcodeUsername !== user.leetcodeUsername) ||
+      (req.body.codeforcesUsername !== undefined && req.body.codeforcesUsername !== user.codeforcesUsername);
+
+    if (handlesChanged) {
+      user.codingStats = undefined; // Force refresh on next fetch
+    }
+
     user.githubUsername = req.body.githubUsername !== undefined ? req.body.githubUsername : user.githubUsername;
+    user.leetcodeUsername = req.body.leetcodeUsername !== undefined ? req.body.leetcodeUsername : user.leetcodeUsername;
+    user.codeforcesUsername = req.body.codeforcesUsername !== undefined ? req.body.codeforcesUsername : user.codeforcesUsername;
     user.socialLinks = req.body.socialLinks ? (typeof req.body.socialLinks === 'string' ? JSON.parse(req.body.socialLinks) : req.body.socialLinks) : user.socialLinks;
-    user.skills = req.body.skills ? (typeof req.body.skills === 'string' ? JSON.parse(req.body.skills) : req.body.skills) : user.skills;
+    user.interests = req.body.interests ? (typeof req.body.interests === 'string' ? JSON.parse(req.body.interests) : req.body.interests) : user.interests;
 
     const savedUser = await user.save();
 
@@ -97,12 +152,10 @@ const updateProfile = async (req, res) => {
     res.json({ success: true, user: updatedUser });
   } catch (error) {
     console.error('Update Profile Error:', error);
-    if (error.name === 'ValidationError') {
-      return res.status(400).json({ message: 'Validation Error', errors: error.errors });
-    }
     res.status(500).json({ message: error.message || 'Internal Server Error' });
   }
 };
+
 
 // @desc    Follow/Unfollow user
 // @route   POST /api/users/follow/:id
@@ -135,6 +188,13 @@ const followUser = async (req, res) => {
       // Follow
       currentUser.following.push(userToFollow._id);
       userToFollow.followers.push(currentUser._id);
+
+      // Create Notification
+      await Notification.create({
+        recipient: userToFollow._id,
+        sender: req.user._id,
+        type: 'follow'
+      });
     }
 
     await currentUser.save();

@@ -6,7 +6,7 @@ const {
 const { protect } = require('../middleware/auth');
 const upload = require('../middleware/upload');
 
-router.post('/', protect, upload.single('image'), createPost);
+router.post('/', protect, upload.fields([{ name: 'image', maxCount: 1 }, { name: 'images', maxCount: 5 }, { name: 'video', maxCount: 1 }]), createPost);
 router.get('/', protect, getFeed);
 router.get('/explore', getExplore);
 router.get('/projects', getProjects);

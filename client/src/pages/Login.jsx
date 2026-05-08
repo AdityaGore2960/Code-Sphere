@@ -40,7 +40,7 @@ const Login = () => {
               value={email} 
               onChange={(e) => setEmail(e.target.value)} 
               required 
-              placeholder="dev@example.com" 
+              placeholder="Enter your email" 
             />
           </div>
           <div className="input-group">
@@ -52,7 +52,7 @@ const Login = () => {
               value={password} 
               onChange={(e) => setPassword(e.target.value)} 
               required 
-              placeholder="••••••••" 
+              placeholder="Enter your password" 
             />
           </div>
           <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }}>

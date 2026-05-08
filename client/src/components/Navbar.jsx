@@ -3,10 +3,12 @@ import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
-import { Home, Search, Bell, User as UserIcon, LogOut, Plus, Archive, Smile, Book, Star, Users, Heart, Settings as SettingsIcon, Accessibility, ChevronDown, X, Info } from 'lucide-react';
+import { Home, Search, Bell, User as UserIcon, LogOut, Plus, Archive, Smile, Book, Star, Users, Heart, Settings as SettingsIcon, Accessibility, ChevronDown, X, Info, MessageSquare, Layout, Briefcase } from 'lucide-react';
+import { ChatState } from '../context/ChatContext';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
+  const { setSelectedChat } = ChatState();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -17,6 +19,25 @@ const Navbar = () => {
   const [isBusy, setIsBusy] = useState(false);
   const [isSettingStatus, setIsSettingStatus] = useState(false);
   const dropdownRef = useRef(null);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  const fetchUnreadCount = async () => {
+    try {
+      const { data } = await axios.get('notifications');
+      const count = data.filter(n => !n.isRead).length;
+      setUnreadCount(count);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  useEffect(() => {
+    if (user) {
+      fetchUnreadCount();
+      const interval = setInterval(fetchUnreadCount, 30000); // Check every 30s
+      return () => clearInterval(interval);
+    }
+  }, [user]);
 
   const suggestions = [
     { emoji: '🌴', text: 'On vacation' },
@@ -28,7 +49,7 @@ const Navbar = () => {
   const handleSetStatus = async () => {
     setIsSettingStatus(true);
     try {
-      await axios.put('/users/status', {
+      await axios.put('users/status', {
         message: statusText,
         busy: isBusy,
         expiry: statusExpiry,
@@ -56,10 +77,13 @@ const Navbar = () => {
 
   const navItems = [
     { to: '/', icon: <Home size={22} />, title: 'Home' },
+    { to: '/showcase', icon: <Layout size={22} />, title: 'Showcase' },
     { to: '/repositories', icon: <Archive size={22} />, title: 'All Repos' },
+    { to: '/jobs', icon: <Briefcase size={22} />, title: 'Jobs' },
     { to: '/create-repo', icon: <Plus size={22} />, title: 'New Repo' },
     { to: '/notifications', icon: <Bell size={22} />, title: 'Notifications' },
   ];
+
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -92,11 +116,45 @@ const Navbar = () => {
               to={item.to}
               title={item.title}
               className={({ isActive }) => `nav-link-item ${isActive ? 'active' : ''}`}
-              style={{ padding: '0.5rem', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              style={{ padding: '0.5rem', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}
             >
               {item.icon}
+              {item.title === 'Notifications' && unreadCount > 0 && (
+                <span style={{ 
+                  position: 'absolute', 
+                  top: '2px', 
+                  right: '2px', 
+                  background: '#ef4444', 
+                  color: 'white', 
+                  fontSize: '10px', 
+                  fontWeight: 700, 
+                  borderRadius: '50%', 
+                  width: '16px', 
+                  height: '16px', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  border: '2px solid var(--card-bg)'
+                }}>
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
             </NavLink>
           ))}
+
+
+          <button
+            title="Messaging"
+            onClick={() => {
+              // We'll use a custom event or context to open the drawer
+              window.dispatchEvent(new CustomEvent('toggle-messaging'));
+            }}
+            className="nav-link-item"
+            style={{ padding: '0.5rem', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', color: 'inherit' }}
+          >
+            <MessageSquare size={22} />
+          </button>
+
 
           <div style={{ width: '1px', height: '20px', background: 'var(--border)', margin: '0 0.5rem' }}></div>
 

@@ -147,8 +147,35 @@ const PostCard = ({ post, onDelete }) => {
         {post.content}
       </p>
 
-      {/* Image Attachment */}
-      {post.image && post.image.trim() !== '' && (
+      {/* Multi-Image Grid */}
+      {post.images && post.images.length > 0 && (
+        <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: post.images.length === 1 ? '1fr' : post.images.length === 2 ? '1fr 1fr' : '1fr 1fr', 
+            gap: '2px', 
+            marginBottom: '1.25rem', 
+            borderRadius: '10px', 
+            overflow: 'hidden', 
+            border: '1px solid var(--border)' 
+        }}>
+          {post.images.map((img, idx) => (
+            <img
+              key={idx}
+              src={img}
+              crossOrigin="anonymous"
+              style={{ 
+                  width: '100%', 
+                  height: post.images.length > 2 ? '200px' : '400px', 
+                  objectFit: 'cover' 
+              }}
+              alt={`Post attachment ${idx + 1}`}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Single Image Attachment (Legacy) */}
+      {post.image && post.image.trim() !== '' && (!post.images || post.images.length === 0) && (
         <div style={{ marginBottom: '1.25rem', borderRadius: '10px', overflow: 'hidden', border: '1px solid var(--border)' }}>
           <img
             src={post.image}
@@ -174,13 +201,16 @@ const PostCard = ({ post, onDelete }) => {
               allowFullScreen
             ></iframe>
           ) : (
-            <video controls style={{ width: '100%', maxHeight: '400px' }}>
+            <video controls style={{ width: '100%', maxHeight: '500px' }}>
               <source src={post.video} type="video/mp4" />
+              <source src={post.video} type="video/webm" />
+              <source src={post.video} type="video/ogg" />
               Your browser does not support the video tag.
             </video>
           )}
         </div>
       )}
+
 
       {/* Event Showcase */}
       {post.event && post.event.title && (
@@ -235,17 +265,19 @@ const PostCard = ({ post, onDelete }) => {
         </div>
       )}
 
-      {/* Project Details (Original Legacy Support) */}
-      {post.isProject && !post.repository && (
-        <div style={{ background: 'var(--bg)', padding: '1rem', borderRadius: '8px', marginBottom: '1rem', border: '1px solid var(--border)' }}>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1rem' }}>
-            {post.techStack?.map(tech => (
-              <span key={tech} className="tag">{tech}</span>
-            ))}
-          </div>
+      {/* Project Details */}
+      {post.isProject && (
+        <div style={{ background: 'var(--primary-light)', padding: '1rem', borderRadius: '8px', marginBottom: '1rem', border: '1px solid var(--primary)', opacity: 0.9 }}>
+          {post.techStack && post.techStack.length > 0 && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1rem' }}>
+              {post.techStack.map(tech => (
+                <span key={tech} className="tag" style={{ background: '#fff' }}>{tech}</span>
+              ))}
+            </div>
+          )}
           <div style={{ display: 'flex', gap: '1rem' }}>
             {post.githubLink && (
-              <a href={post.githubLink} target="_blank" rel="noreferrer" className="btn btn-outline" style={{ fontSize: '0.8rem', padding: '0.4rem 0.8rem' }}>
+              <a href={post.githubLink} target="_blank" rel="noreferrer" className="btn btn-outline" style={{ fontSize: '0.8rem', padding: '0.4rem 0.8rem', background: '#fff' }}>
                 <Code size={14} /> Repo
               </a>
             )}
