@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { Link as LinkIcon, MapPin, Calendar, Edit3, UserPlus, UserMinus, Star, GitFork, Code, BookOpen, Layers, Heart, Search, Camera, Upload, Image, X, Video, Plus, Trash2, PlusCircle, Briefcase, GraduationCap, Award, FileText } from 'lucide-react';
@@ -8,17 +8,51 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
 import { useCall } from '../context/CallContext';
 
+const trialRepos = [
+  {
+    _id: 'trial-1',
+    name: 'CodeSphere-Core',
+    description: 'The core architecture for the CodeSphere developer social platform. High-performance, scalable, and modular.',
+    stargazers_count: 124,
+    forks_count: 42,
+    language: 'JavaScript',
+    owner: { username: 'System', profilePic: 'https://api.dicebear.com/7.x/identicon/svg?seed=System' },
+    updatedAt: new Date().toISOString()
+  },
+  {
+    _id: 'trial-2',
+    name: 'DevPulse-Analytics',
+    description: 'A real-time data visualization engine for tracking developer contributions and community growth metrics.',
+    stargazers_count: 89,
+    forks_count: 18,
+    language: 'TypeScript',
+    owner: { username: 'System', profilePic: 'https://api.dicebear.com/7.x/identicon/svg?seed=System' },
+    updatedAt: new Date().toISOString()
+  },
+  {
+    _id: 'trial-3',
+    name: 'Astra-UI-Library',
+    description: 'A premium, accessible component library designed specifically for data-intensive developer tools and dashboards.',
+    stargazers_count: 215,
+    forks_count: 31,
+    language: 'React',
+    owner: { username: 'System', profilePic: 'https://api.dicebear.com/7.x/identicon/svg?seed=System' },
+    updatedAt: new Date().toISOString()
+  }
+];
+
 const Profile = () => {
   const { callUser } = useCall();
   const { username } = useParams();
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
   const initialTab = queryParams.get('tab') || 'overview';
-  
+
   const { user: currentUser, updateProfile } = useAuth();
   const [profile, setProfile] = useState(null);
   const [repos, setRepos] = useState([]);
   const [localRepos, setLocalRepos] = useState([]);
+  const [communityRepos, setCommunityRepos] = useState([]);
   const [posts, setPosts] = useState([]);
   const [isFollowing, setIsFollowing] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -39,6 +73,8 @@ const Profile = () => {
   const [repoType, setRepoType] = useState('all');
   const [repoLanguage, setRepoLanguage] = useState('all');
   const [repoSort, setRepoSort] = useState('updated');
+  const [repoToDelete, setRepoToDelete] = useState(null);
+  const [isDeletingRepo, setIsDeletingRepo] = useState(false);
   const [loading, setLoading] = useState(true);
   const [showPhotoMenu, setShowPhotoMenu] = useState(false);
   const fileInputRef = useRef(null);
@@ -72,7 +108,7 @@ const Profile = () => {
         const cleanProfile = { ...profile };
         delete cleanProfile.followers;
         delete cleanProfile.following;
-        
+
         await updateProfile({ ...cleanProfile, profilePic: base64String });
         setProfile({ ...profile, profilePic: base64String });
         setShowPhotoMenu(false);
@@ -92,13 +128,21 @@ const Profile = () => {
       setProfile(data);
       setEditData(data);
       setIsFollowing(data.followers.some(f => f._id === currentUser._id));
-      
-      const githubRes = await axios.get(`/users/github/${data.githubUsername || username}`);
-      setRepos(githubRes.data);
-      
+
+      try {
+        const githubRes = await axios.get(`/users/github/${data.githubUsername || username}`);
+        setRepos(githubRes.data);
+      } catch (ghErr) {
+        console.warn('Could not fetch GitHub repositories:', ghErr.response?.data?.message || ghErr.message);
+        setRepos([]); // Fallback to empty list
+      }
+
       const localRes = await axios.get(`/repos/${username}`);
       setLocalRepos(localRes.data);
-      
+
+      const communityRes = await axios.get('/repos');
+      setCommunityRepos(communityRes.data);
+
       const postRes = await axios.get('/posts/explore');
       setPosts(postRes.data.filter(p => p.user.username === username));
 
@@ -139,7 +183,7 @@ const Profile = () => {
     e.preventDefault();
     setIsUpdating(true);
     console.log('Updating profile with data:', editData);
-    
+
     try {
       const formData = new FormData();
       formData.append('name', editData.name || '');
@@ -149,11 +193,11 @@ const Profile = () => {
       formData.append('githubUsername', editData.githubUsername || '');
       formData.append('leetcodeUsername', editData.leetcodeUsername || '');
       formData.append('codeforcesUsername', editData.codeforcesUsername || '');
-      
+
       if (editData.socialLinks) {
         formData.append('socialLinks', JSON.stringify(editData.socialLinks));
       }
-      
+
       if (editData.skills) {
         formData.append('skills', JSON.stringify(editData.skills));
       }
@@ -161,11 +205,11 @@ const Profile = () => {
       if (editData.interests) {
         formData.append('interests', JSON.stringify(editData.interests));
       }
-      
+
       if (tempImageFile) {
         formData.append('profilePic', tempImageFile);
       }
-      
+
       if (tempBannerFile) {
         formData.append('banner', tempBannerFile);
       }
@@ -253,13 +297,18 @@ const Profile = () => {
 
   const projects = posts.filter(p => p.isProject);
   const likedPosts = posts.filter(p => p.likes?.includes(profile._id));
-  
-  // Trial repositories for demonstration
-  const allRepos = [...repos, ...localRepos];
-  
+
+  // Combined repositories from all sources: GitHub, Local User, Community, and Trial
+  const allRepos = [
+    ...repos,
+    ...localRepos,
+    ...communityRepos.filter(cr => cr.owner?.username !== username), // Avoid duplicates of current user's local repos
+    ...trialRepos
+  ];
+
   // Filtering and Sorting Logic
   const languages = ['all', ...new Set(allRepos.map(r => r.language).filter(Boolean))];
-  
+
   const filteredRepos = allRepos
     .filter(repo => {
       const matchesSearch = repo.name.toLowerCase().includes(repoSearch.toLowerCase());
@@ -287,7 +336,7 @@ const Profile = () => {
   ].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
 
   // contribution data could be fetched here
-  const contributionData = []; 
+  const contributionData = [];
 
   const renderCodingDashboard = () => {
     if (!codingStats || statsLoading) {
@@ -406,8 +455,8 @@ const Profile = () => {
                   <AreaChart data={codingStats.codeforces.ratingHistory.slice(-10)}>
                     <defs>
                       <linearGradient id="colorRating" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.8}/>
-                        <stop offset="95%" stopColor="var(--primary)" stopOpacity={0}/>
+                        <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.8} />
+                        <stop offset="95%" stopColor="var(--primary)" stopOpacity={0} />
                       </linearGradient>
                     </defs>
                     <XAxis dataKey="ratingUpdateTimeSeconds" hide />
@@ -468,8 +517,8 @@ const Profile = () => {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
                     <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Code size={20} color="var(--primary)" /> Coding Dashboard</h3>
                     {currentUser.username === username && (
-                      <button 
-                        onClick={() => setIsEditingHandles(true)} 
+                      <button
+                        onClick={() => setIsEditingHandles(true)}
                         style={{ fontSize: '0.85rem', color: 'var(--primary)', background: 'none', border: 'none', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
                       >
                         <Edit3 size={14} /> Configure
@@ -478,12 +527,12 @@ const Profile = () => {
                   </div>
                   {renderCodingDashboard()}
                 </section>
-                
+
                 {/* Recent Activity */}
                 <section>
-                  <h3 style={{ marginBottom: '1.25rem' }}>Recent Activity</h3>
+                  <h3 style={{ marginBottom: '1.25rem' }}>All Posts</h3>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                    {posts.length > 0 ? posts.slice(0, 3).map(post => (
+                    {posts.length > 0 ? posts.map(post => (
                       <PostCard key={post._id} post={post} onDelete={handleDeletePost} />
                     )) : <p>No activity yet.</p>}
                   </div>
@@ -530,7 +579,7 @@ const Profile = () => {
                   </div>
                 </section>
               </div>
-              
+
               <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
                 <div className="card">
                   <h4 style={{ marginBottom: '1.25rem' }}>Tech Stack</h4>
@@ -542,7 +591,7 @@ const Profile = () => {
                     ))}
                   </div>
                 </div>
-                
+
                 <div className="card">
                   <h4 style={{ marginBottom: '1.25rem' }}>Platform Stats</h4>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
@@ -571,17 +620,17 @@ const Profile = () => {
             <div className="card" style={{ padding: '1rem', marginBottom: '1.5rem', display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap', background: '#fff' }}>
               <div style={{ flex: 1, minWidth: '200px', position: 'relative' }}>
                 <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-light)' }} />
-                <input 
-                  type="text" 
-                  placeholder="Find a repository..." 
+                <input
+                  type="text"
+                  placeholder="Find a repository..."
                   value={repoSearch}
                   onChange={(e) => setRepoSearch(e.target.value)}
                   style={{ width: '100%', padding: '0.6rem 1rem 0.6rem 2.8rem', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg)' }}
                 />
               </div>
-              
-              <select 
-                value={repoType} 
+
+              <select
+                value={repoType}
                 onChange={(e) => setRepoType(e.target.value)}
                 style={{ padding: '0.6rem 1rem', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg)', cursor: 'pointer' }}
               >
@@ -590,8 +639,8 @@ const Profile = () => {
                 <option value="private">Private</option>
               </select>
 
-              <select 
-                value={repoLanguage} 
+              <select
+                value={repoLanguage}
                 onChange={(e) => setRepoLanguage(e.target.value)}
                 style={{ padding: '0.6rem 1rem', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg)', cursor: 'pointer', textTransform: 'capitalize' }}
               >
@@ -600,8 +649,8 @@ const Profile = () => {
                 ))}
               </select>
 
-              <select 
-                value={repoSort} 
+              <select
+                value={repoSort}
                 onChange={(e) => setRepoSort(e.target.value)}
                 style={{ padding: '0.6rem 1rem', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg)', cursor: 'pointer' }}
               >
@@ -611,8 +660,8 @@ const Profile = () => {
               </select>
 
               {currentUser.username === username && (
-                <button 
-                  className="btn btn-primary" 
+                <button
+                  className="btn btn-primary"
                   style={{ marginLeft: 'auto' }}
                   onClick={() => navigate('/create-repo')}
                 >
@@ -624,12 +673,26 @@ const Profile = () => {
             {/* Repos Grid */}
             <div className="repo-grid">
               {filteredRepos.length > 0 ? filteredRepos.map(repo => (
-                <a href={repo.html_url} target="_blank" rel="noreferrer" key={repo.id} className="card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', transition: 'var(--transition)' }}>
+                <Link to={`/repo/${username}/${repo.name}`} key={repo._id || repo.id} className="card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', transition: 'var(--transition)', textDecoration: 'none', color: 'inherit' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
                     <h4 style={{ color: 'var(--primary)', fontSize: '1.1rem' }}>{repo.name}</h4>
-                    <span className="badge" style={{ fontSize: '0.7rem', background: 'var(--bg)', color: 'var(--text-light)', border: '1px solid var(--border)' }}>
-                      {repo.private ? 'Private' : 'Public'}
-                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <span className="badge" style={{ fontSize: '0.7rem', background: 'var(--bg)', color: 'var(--text-light)', border: '1px solid var(--border)' }}>
+                        {repo.private ? 'Private' : 'Public'}
+                      </span>
+                      {currentUser.username === username && (
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setRepoToDelete(repo);
+                          }}
+                          style={{ background: 'none', border: 'none', color: '#cf222e', cursor: 'pointer', padding: '0.2rem', display: 'flex', alignItems: 'center' }}
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
+                    </div>
                   </div>
                   <p style={{ fontSize: '0.9rem', color: 'var(--text-light)', marginBottom: '1.5rem', flex: 1, lineHeight: 1.5 }}>{repo.description || 'No description provided'}</p>
                   <div style={{ display: 'flex', gap: '1.25rem', fontSize: '0.85rem', alignItems: 'center' }}>
@@ -642,7 +705,7 @@ const Profile = () => {
                       </span>
                     )}
                   </div>
-                </a>
+                </Link>
               )) : (
                 <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '5rem 0' }}>
                   <p style={{ color: 'var(--text-light)', fontSize: '1.1rem' }}>No repositories found matching your filters.</p>
@@ -656,20 +719,20 @@ const Profile = () => {
         return (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             {currentUser.username === username && (
-              <div className="card" style={{ 
-                border: '2px dashed var(--border)', 
-                background: 'var(--primary-light)', 
-                display: 'flex', 
-                flexDirection: 'column', 
-                alignItems: 'center', 
-                padding: '3rem', 
+              <div className="card" style={{
+                border: '2px dashed var(--border)',
+                background: 'var(--primary-light)',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                padding: '3rem',
                 textAlign: 'center',
                 transition: 'var(--transition)',
                 cursor: 'pointer'
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--primary)'; e.currentTarget.style.background = '#e0eaff'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--primary-light)'; }}
-              onClick={() => navigate('/')}
+                onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--primary)'; e.currentTarget.style.background = '#e0eaff'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--primary-light)'; }}
+                onClick={() => navigate('/')}
               >
                 <div style={{ background: 'white', padding: '1rem', borderRadius: '50%', marginBottom: '1.5rem', boxShadow: 'var(--shadow)' }}>
                   <Code size={40} color="var(--primary)" />
@@ -692,7 +755,7 @@ const Profile = () => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
                 {starredRepos.map(repo => (
-                  <a href={repo.html_url} target="_blank" rel="noreferrer" key={repo.id} className="card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column' }}>
+                  <Link to={`/repo/${repo.owner?.username || username}/${repo.name}`} key={repo._id || repo.id} className="card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', textDecoration: 'none', color: 'inherit' }}>
                     <h4 style={{ color: 'var(--primary)', marginBottom: '0.75rem', fontSize: '1.1rem' }}>{repo.name}</h4>
                     <p style={{ fontSize: '0.9rem', color: 'var(--text-light)', marginBottom: '1.5rem', flex: 1 }}>{repo.description || 'No description provided'}</p>
                     <div style={{ display: 'flex', gap: '1.25rem', fontSize: '0.85rem', alignItems: 'center' }}>
@@ -700,10 +763,10 @@ const Profile = () => {
                       <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}><GitFork size={16} /> {repo.forks_count}</span>
                       {repo.language && <span className="tag" style={{ marginLeft: 'auto' }}>{repo.language}</span>}
                     </div>
-                  </a>
+                  </Link>
                 ))}
               </div>
-              
+
               {likedPosts.length > 0 && (
                 <div>
                   <h3 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -736,7 +799,7 @@ const Profile = () => {
         const cleanProfile = { ...profile };
         delete cleanProfile.followers;
         delete cleanProfile.following;
-        
+
         await updateProfile({ ...cleanProfile, banner: base64String });
         setProfile({ ...profile, banner: base64String });
         alert('Profile banner updated successfully!');
@@ -750,24 +813,61 @@ const Profile = () => {
 
   return (
     <div style={{ paddingBottom: '3rem' }}>
+      {/* Repo Delete Modal */}
+      {repoToDelete && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000 }}>
+          <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="card" style={{ maxWidth: '450px', width: '90%', padding: '0', overflow: 'hidden' }}>
+            <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ fontSize: '1.1rem' }}>Delete Repository</h3>
+              <X size={20} style={{ cursor: 'pointer' }} onClick={() => setRepoToDelete(null)} />
+            </div>
+            <div style={{ padding: '1.5rem' }}>
+              <p style={{ fontSize: '0.9rem', marginBottom: '1rem' }}>Are you sure you want to delete <strong>{repoToDelete.name}</strong>? This action cannot be undone.</p>
+              <div style={{ display: 'flex', gap: '1rem' }}>
+                <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => setRepoToDelete(null)}>Cancel</button>
+                <button
+                  className="btn"
+                  style={{ flex: 1, background: '#cf222e', color: 'white' }}
+                  disabled={isDeletingRepo}
+                  onClick={async () => {
+                    setIsDeletingRepo(true);
+                    try {
+                      await axios.delete(`/repos/${repoToDelete._id}`);
+                      setLocalRepos(localRepos.filter(r => r._id !== repoToDelete._id));
+                      setRepoToDelete(null);
+                    } catch (err) {
+                      console.error(err);
+                      alert('Failed to delete repository');
+                    } finally {
+                      setIsDeletingRepo(false);
+                    }
+                  }}
+                >
+                  {isDeletingRepo ? 'Deleting...' : 'Delete'}
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
       {/* Profile Header */}
       <div className="card" style={{ padding: '0', overflow: 'hidden', marginBottom: '1rem', borderBottomLeftRadius: 0, borderBottomRightRadius: 0 }}>
-        <div style={{ 
-            background: profile.banner ? `url(${profile.banner}) center/cover no-repeat` : 'linear-gradient(135deg, #1e293b 0%, #334155 100%)', 
-            height: '220px', 
-            position: 'relative' 
+        <div style={{
+          background: profile.banner ? `url(${profile.banner}) center/cover no-repeat` : 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
+          height: '220px',
+          position: 'relative'
         }}>
           <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '50%', background: 'linear-gradient(to top, rgba(0,0,0,0.4), transparent)' }}></div>
-          
+
           {currentUser.username === username && (
-              <div style={{ position: 'absolute', top: '15px', right: '15px', zIndex: 10 }}>
-                <button 
-                    onClick={() => bannerInputRef.current.click()}
-                    style={{ background: 'white', border: 'none', padding: '8px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'var(--shadow)' }}>
-                    <Camera size={20} color="var(--primary)" />
-                </button>
-                <input type="file" ref={bannerInputRef} style={{ display: 'none' }} accept="image/*" onChange={handleBannerChange} />
-              </div>
+            <div style={{ position: 'absolute', top: '15px', right: '15px', zIndex: 10 }}>
+              <button
+                onClick={() => bannerInputRef.current.click()}
+                style={{ background: 'white', border: 'none', padding: '8px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'var(--shadow)' }}>
+                <Camera size={20} color="var(--primary)" />
+              </button>
+              <input type="file" ref={bannerInputRef} style={{ display: 'none' }} accept="image/*" onChange={handleBannerChange} />
+            </div>
           )}
         </div>
 
@@ -780,26 +880,26 @@ const Profile = () => {
                 style={{ position: 'relative', cursor: currentUser.username === username ? 'pointer' : 'default' }}
                 onClick={() => currentUser.username === username && setShowPhotoMenu(!showPhotoMenu)}
               >
-                <img 
-                  src={profile.profilePic || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile.username}`} 
-                  alt={profile.username} 
-                  style={{ width: '140px', height: '140px', borderRadius: '30px', border: '6px solid var(--card-bg)', background: 'var(--card-bg)', boxShadow: 'var(--shadow-lg)', objectFit: 'cover' }} 
+                <img
+                  src={profile.profilePic || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile.username}`}
+                  alt={profile.username}
+                  style={{ width: '140px', height: '140px', borderRadius: '30px', border: '6px solid var(--card-bg)', background: 'var(--card-bg)', boxShadow: 'var(--shadow-lg)', objectFit: 'cover' }}
                 />
                 {currentUser.username === username && (
-                  <div style={{ 
-                    position: 'absolute', 
-                    inset: 0, 
-                    background: 'rgba(0,0,0,0.3)', 
-                    borderRadius: '30px', 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center', 
-                    opacity: 0, 
+                  <div style={{
+                    position: 'absolute',
+                    inset: 0,
+                    background: 'rgba(0,0,0,0.3)',
+                    borderRadius: '30px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    opacity: 0,
                     transition: 'opacity 0.2s',
                     color: 'white'
                   }}
-                  onMouseEnter={(e) => e.currentTarget.style.opacity = 1}
-                  onMouseLeave={(e) => e.currentTarget.style.opacity = 0}
+                    onMouseEnter={(e) => e.currentTarget.style.opacity = 1}
+                    onMouseLeave={(e) => e.currentTarget.style.opacity = 0}
                   >
                     <Camera size={24} />
                   </div>
@@ -807,20 +907,20 @@ const Profile = () => {
               </motion.div>
 
               {/* Hidden Inputs */}
-              <input 
-                type="file" 
-                ref={fileInputRef} 
-                style={{ display: 'none' }} 
-                accept="image/*" 
-                onChange={handleImageChange} 
+              <input
+                type="file"
+                ref={fileInputRef}
+                style={{ display: 'none' }}
+                accept="image/*"
+                onChange={handleImageChange}
               />
-              <input 
-                type="file" 
-                ref={cameraInputRef} 
-                style={{ display: 'none' }} 
-                accept="image/*" 
-                capture="user" 
-                onChange={handleImageChange} 
+              <input
+                type="file"
+                ref={cameraInputRef}
+                style={{ display: 'none' }}
+                accept="image/*"
+                capture="user"
+                onChange={handleImageChange}
               />
 
               {/* Photo Menu */}
@@ -830,29 +930,29 @@ const Profile = () => {
                     initial={{ opacity: 0, y: 10, scale: 0.95 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                    style={{ 
-                      position: 'absolute', 
-                      top: '100%', 
-                      left: 0, 
-                      marginTop: '0.5rem', 
-                      background: 'white', 
-                      border: '1px solid var(--border)', 
-                      borderRadius: '12px', 
-                      boxShadow: 'var(--shadow-lg)', 
-                      zIndex: 100, 
+                    style={{
+                      position: 'absolute',
+                      top: '100%',
+                      left: 0,
+                      marginTop: '0.5rem',
+                      background: 'white',
+                      border: '1px solid var(--border)',
+                      borderRadius: '12px',
+                      boxShadow: 'var(--shadow-lg)',
+                      zIndex: 100,
                       minWidth: '180px',
                       overflow: 'hidden'
                     }}
                   >
                     <div style={{ padding: '0.5rem' }}>
-                      <button 
+                      <button
                         onClick={() => cameraInputRef.current.click()}
-                        style={{ 
-                          width: '100%', 
-                          padding: '0.75rem 1rem', 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          gap: '0.75rem', 
+                        style={{
+                          width: '100%',
+                          padding: '0.75rem 1rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.75rem',
                           borderRadius: '8px',
                           color: 'var(--text)',
                           fontSize: '0.9rem'
@@ -862,14 +962,14 @@ const Profile = () => {
                         <Camera size={18} color="var(--primary)" />
                         Upload (Camera)
                       </button>
-                      <button 
+                      <button
                         onClick={() => fileInputRef.current.click()}
-                        style={{ 
-                          width: '100%', 
-                          padding: '0.75rem 1rem', 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          gap: '0.75rem', 
+                        style={{
+                          width: '100%',
+                          padding: '0.75rem 1rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.75rem',
                           borderRadius: '8px',
                           color: 'var(--text)',
                           fontSize: '0.9rem'
@@ -886,9 +986,9 @@ const Profile = () => {
             </div>
             <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
               {currentUser.username === username ? (
-                <button 
-                  className="btn btn-outline" 
-                  style={{ background: 'white' }} 
+                <button
+                  className="btn btn-outline"
+                  style={{ background: 'white' }}
                   onClick={() => {
                     setEditData(profile);
                     setIsEditing(true);
@@ -898,12 +998,12 @@ const Profile = () => {
                 </button>
               ) : (
                 <div style={{ display: 'flex', gap: '0.75rem' }}>
-                  <button className={`btn ${isFollowing ? 'btn-outline' : 'btn-primary'}`} style={isFollowing ? {background: 'white'} : {}} onClick={handleFollow}>
+                  <button className={`btn ${isFollowing ? 'btn-outline' : 'btn-primary'}`} style={isFollowing ? { background: 'white' } : {}} onClick={handleFollow}>
                     {isFollowing ? <><UserMinus size={18} /> Unfollow</> : <><UserPlus size={18} /> Follow</>}
                   </button>
-                  <button 
-                    className="btn btn-outline" 
-                    style={{ background: '#ecfdf5', color: '#059669', borderColor: '#10b981' }} 
+                  <button
+                    className="btn btn-outline"
+                    style={{ background: '#ecfdf5', color: '#059669', borderColor: '#10b981' }}
                     onClick={() => callUser(profile._id)}
                   >
                     <Video size={18} /> Start Interview
@@ -912,7 +1012,7 @@ const Profile = () => {
               )}
             </div>
           </div>
-          
+
           <div style={{ marginTop: '1.5rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
               <h1 style={{ fontSize: '2.25rem', fontWeight: 900, letterSpacing: '-0.02em' }}>{profile.name || profile.username}</h1>
@@ -922,7 +1022,7 @@ const Profile = () => {
             {profile.headline && <p style={{ color: 'var(--primary)', fontSize: '1.2rem', fontWeight: 700, marginTop: '0.25rem' }}>{profile.headline}</p>}
             {profile.name && <p style={{ color: 'var(--text-light)', fontSize: '1rem', fontWeight: 600 }}>@{profile.username}</p>}
             <p style={{ color: 'var(--text-light)', fontSize: '1.15rem', marginTop: '0.25rem' }}>{profile.bio || 'New developer on CodeSphere'}</p>
-            
+
             <div style={{ display: 'flex', gap: '2rem', marginTop: '1.25rem', flexWrap: 'wrap' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--text-light)', fontSize: '0.9rem' }}>
                 <Calendar size={18} /> Joined {new Date(profile.createdAt).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}
@@ -933,8 +1033,8 @@ const Profile = () => {
                 </a>
               )}
               <div style={{ display: 'flex', gap: '1.5rem', color: 'var(--text)' }}>
-                <span><strong>{profile.followers?.length || 0}</strong> <span style={{color: 'var(--text-light)'}}>followers</span></span>
-                <span><strong>{profile.following?.length || 0}</strong> <span style={{color: 'var(--text-light)'}}>following</span></span>
+                <span><strong>{profile.followers?.length || 0}</strong> <span style={{ color: 'var(--text-light)' }}>followers</span></span>
+                <span><strong>{profile.following?.length || 0}</strong> <span style={{ color: 'var(--text-light)' }}>following</span></span>
               </div>
             </div>
           </div>
@@ -949,8 +1049,8 @@ const Profile = () => {
           { id: 'projects', label: 'Projects', icon: <Code size={18} />, count: projects.length },
           { id: 'stars', label: 'Stars', icon: <Star size={18} /> }
         ].map(tab => (
-          <div 
-            key={tab.id} 
+          <div
+            key={tab.id}
             className={`tab-item ${activeTab === tab.id ? 'active' : ''}`}
             onClick={() => setActiveTab(tab.id)}
           >
@@ -976,7 +1076,7 @@ const Profile = () => {
                 <button onClick={() => setIsEditingHandles(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X /></button>
               </div>
               <p style={{ color: 'var(--text-light)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>Enter your usernames to sync your real-time coding statistics from GitHub, LeetCode, and Codeforces.</p>
-              
+
               <form onSubmit={async (e) => {
                 e.preventDefault();
                 setIsUpdating(true);
@@ -997,17 +1097,17 @@ const Profile = () => {
               }}>
                 <div className="input-group">
                   <label>GitHub Username</label>
-                  <input type="text" value={editData.githubUsername || ''} onChange={e => setEditData({...editData, githubUsername: e.target.value})} placeholder="e.g. johndev" />
+                  <input type="text" value={editData.githubUsername || ''} onChange={e => setEditData({ ...editData, githubUsername: e.target.value })} placeholder="e.g. johndev" />
                 </div>
                 <div className="input-group">
                   <label>LeetCode Username</label>
-                  <input type="text" value={editData.leetcodeUsername || ''} onChange={e => setEditData({...editData, leetcodeUsername: e.target.value})} placeholder="e.g. john_lc" />
+                  <input type="text" value={editData.leetcodeUsername || ''} onChange={e => setEditData({ ...editData, leetcodeUsername: e.target.value })} placeholder="e.g. john_lc" />
                 </div>
                 <div className="input-group">
                   <label>Codeforces Username</label>
-                  <input type="text" value={editData.codeforcesUsername || ''} onChange={e => setEditData({...editData, codeforcesUsername: e.target.value})} placeholder="e.g. john_cf" />
+                  <input type="text" value={editData.codeforcesUsername || ''} onChange={e => setEditData({ ...editData, codeforcesUsername: e.target.value })} placeholder="e.g. john_cf" />
                 </div>
-                
+
                 <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
                   <button type="button" className="btn btn-outline" style={{ flex: 1 }} onClick={() => setIsEditingHandles(false)}>Cancel</button>
                   <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={isUpdating}>
@@ -1023,17 +1123,17 @@ const Profile = () => {
       <AnimatePresence>
         {isEditing && (
           <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', zIndex: 2000, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-            <motion.div 
-              initial={{ scale: 0.95, opacity: 0 }} 
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="card" 
+              className="card"
               style={{ width: '100%', maxWidth: '600px', padding: '2.5rem', maxHeight: '90vh', overflowY: 'auto', position: 'relative' }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                 <h2 style={{ margin: 0 }}>Edit Profile</h2>
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   onClick={() => { setIsEditing(false); setTempImageFile(null); setTempImagePreview(''); }}
                   style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-light)', padding: '0.5rem', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'var(--transition)' }}
                   onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg)'}
@@ -1045,10 +1145,10 @@ const Profile = () => {
               <form onSubmit={handleUpdate}>
                 <div style={{ marginBottom: '1.5rem' }}>
                   <p style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.5rem' }}>Profile Banner</p>
-                  <div style={{ 
-                    width: '100%', 
-                    height: '120px', 
-                    borderRadius: '8px', 
+                  <div style={{
+                    width: '100%',
+                    height: '120px',
+                    borderRadius: '8px',
                     background: tempBannerPreview || editData.banner ? `url(${tempBannerPreview || editData.banner}) center/cover no-repeat` : 'var(--primary-light)',
                     position: 'relative',
                     border: '1px solid var(--border)',
@@ -1059,10 +1159,10 @@ const Profile = () => {
                       onMouseLeave={(e) => e.currentTarget.style.opacity = 0}
                     >
                       <Upload color="white" size={24} />
-                      <input 
-                        type="file" 
-                        style={{ display: 'none' }} 
-                        accept="image/*" 
+                      <input
+                        type="file"
+                        style={{ display: 'none' }}
+                        accept="image/*"
                         onChange={(e) => {
                           const file = e.target.files[0];
                           if (file) {
@@ -1071,7 +1171,7 @@ const Profile = () => {
                             reader.onloadend = () => setTempBannerPreview(reader.result);
                             reader.readAsDataURL(file);
                           }
-                        }} 
+                        }}
                       />
                     </label>
                   </div>
@@ -1079,17 +1179,17 @@ const Profile = () => {
 
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '1.5rem' }}>
                   <div style={{ position: 'relative', width: '100px', height: '100px', marginTop: '-50px' }}>
-                    <img 
-                      src={tempImagePreview || editData.profilePic || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile.username}`} 
-                      style={{ width: '100px', height: '100px', borderRadius: '50%', objectFit: 'cover', border: '4px solid white', boxShadow: 'var(--shadow)' }} 
-                      alt="Preview" 
+                    <img
+                      src={tempImagePreview || editData.profilePic || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile.username}`}
+                      style={{ width: '100px', height: '100px', borderRadius: '50%', objectFit: 'cover', border: '4px solid white', boxShadow: 'var(--shadow)' }}
+                      alt="Preview"
                     />
                     <label style={{ position: 'absolute', bottom: 0, right: 0, background: 'var(--primary)', color: 'white', padding: '0.4rem', borderRadius: '50%', cursor: 'pointer', boxShadow: 'var(--shadow)' }}>
                       <Camera size={16} />
-                      <input 
-                        type="file" 
-                        style={{ display: 'none' }} 
-                        accept="image/*" 
+                      <input
+                        type="file"
+                        style={{ display: 'none' }}
+                        accept="image/*"
                         onChange={(e) => {
                           const file = e.target.files[0];
                           if (file) {
@@ -1098,7 +1198,7 @@ const Profile = () => {
                             reader.onloadend = () => setTempImagePreview(reader.result);
                             reader.readAsDataURL(file);
                           }
-                        }} 
+                        }}
                       />
                     </label>
                   </div>
@@ -1109,23 +1209,23 @@ const Profile = () => {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                   <div className="input-group">
                     <label>Full Name</label>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       id="profile-name"
                       name="name"
-                      value={editData.name || ''} 
-                      onChange={e => setEditData({...editData, name: e.target.value})} 
+                      value={editData.name || ''}
+                      onChange={e => setEditData({ ...editData, name: e.target.value })}
                       placeholder="e.g. John Doe"
                     />
                   </div>
                   <div className="input-group">
                     <label>Pronouns</label>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       id="profile-pronouns"
                       name="pronouns"
-                      value={editData.pronouns || ''} 
-                      onChange={e => setEditData({...editData, pronouns: e.target.value})} 
+                      value={editData.pronouns || ''}
+                      onChange={e => setEditData({ ...editData, pronouns: e.target.value })}
                       placeholder="e.g. they/them"
                     />
                   </div>
@@ -1133,21 +1233,21 @@ const Profile = () => {
 
                 <div className="input-group">
                   <label>Headline</label>
-                  <input 
-                    type="text" 
-                    value={editData.headline || ''} 
-                    onChange={e => setEditData({...editData, headline: e.target.value})} 
+                  <input
+                    type="text"
+                    value={editData.headline || ''}
+                    onChange={e => setEditData({ ...editData, headline: e.target.value })}
                     placeholder="e.g. Full Stack Developer | React Expert | Open Source Contributor"
                   />
                 </div>
 
                 <div className="input-group">
                   <label>Bio</label>
-                  <textarea 
+                  <textarea
                     id="profile-bio"
                     name="bio"
-                    value={editData.bio || ''} 
-                    onChange={e => setEditData({...editData, bio: e.target.value})} 
+                    value={editData.bio || ''}
+                    onChange={e => setEditData({ ...editData, bio: e.target.value })}
                     style={{ minHeight: '80px', resize: 'vertical' }}
                     placeholder="Tell us about yourself..."
                   />
@@ -1156,8 +1256,8 @@ const Profile = () => {
                 <div className="input-group" style={{ marginTop: '1.5rem' }}>
                   <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><FileText size={18} /> Resume (PDF)</label>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <input 
-                      type="file" 
+                    <input
+                      type="file"
                       accept=".pdf,.doc,.docx"
                       onChange={(e) => setTempResumeFile(e.target.files[0])}
                       style={{ flex: 1, padding: '0.5rem', border: '1px solid var(--border)', borderRadius: '8px' }}
@@ -1173,10 +1273,10 @@ const Profile = () => {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                     <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Code size={18} /> Skills</h4>
                   </div>
-                  <input 
-                    type="text" 
-                    value={Array.isArray(editData.skills) ? editData.skills.join(', ') : editData.skills || ''} 
-                    onChange={e => setEditData({...editData, skills: e.target.value.split(',').map(s => s.trim())})} 
+                  <input
+                    type="text"
+                    value={Array.isArray(editData.skills) ? editData.skills.join(', ') : editData.skills || ''}
+                    onChange={e => setEditData({ ...editData, skills: e.target.value.split(',').map(s => s.trim()) })}
                     placeholder="e.g. React, Node.js, Python (comma separated)"
                     style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border)' }}
                   />
@@ -1187,9 +1287,9 @@ const Profile = () => {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                     <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Briefcase size={18} /> Experience</h4>
                   </div>
-                  <textarea 
-                    value={Array.isArray(editData.experience) ? editData.experience.join(', ') : editData.experience || ''} 
-                    onChange={e => setEditData({...editData, experience: e.target.value.split(',').map(s => s.trim())})} 
+                  <textarea
+                    value={Array.isArray(editData.experience) ? editData.experience.join(', ') : editData.experience || ''}
+                    onChange={e => setEditData({ ...editData, experience: e.target.value.split(',').map(s => s.trim()) })}
                     placeholder="e.g. Senior Developer at Google (2020-2024), Software Engineer at Microsoft (2018-2020)"
                     style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border)', minHeight: '80px', resize: 'vertical' }}
                   />
@@ -1201,9 +1301,9 @@ const Profile = () => {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                     <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><GraduationCap size={18} /> Education</h4>
                   </div>
-                  <textarea 
-                    value={Array.isArray(editData.education) ? editData.education.join(', ') : editData.education || ''} 
-                    onChange={e => setEditData({...editData, education: e.target.value.split(',').map(s => s.trim())})} 
+                  <textarea
+                    value={Array.isArray(editData.education) ? editData.education.join(', ') : editData.education || ''}
+                    onChange={e => setEditData({ ...editData, education: e.target.value.split(',').map(s => s.trim()) })}
                     placeholder="e.g. B.S. Computer Science at Stanford University (2016-2020), M.S. AI at MIT (2020-2022)"
                     style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border)', minHeight: '80px', resize: 'vertical' }}
                   />
@@ -1251,8 +1351,8 @@ const Profile = () => {
                         <div className="input-group">
                           <label>Certificate File (PDF/Image)</label>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <input 
-                              type="file" 
+                            <input
+                              type="file"
                               onChange={(e) => {
                                 setTempCertFiles({ ...tempCertFiles, [index]: e.target.files[0] });
                               }}
@@ -1270,61 +1370,61 @@ const Profile = () => {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                   <div className="input-group">
                     <label>GitHub Username</label>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       id="profile-github"
                       name="githubUsername"
-                      value={editData.githubUsername || ''} 
-                      onChange={e => setEditData({...editData, githubUsername: e.target.value})} 
+                      value={editData.githubUsername || ''}
+                      onChange={e => setEditData({ ...editData, githubUsername: e.target.value })}
                       placeholder="your-github-username"
                     />
                   </div>
                   <div className="input-group">
                     <label>LeetCode Username</label>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       id="profile-leetcode"
                       name="leetcodeUsername"
-                      value={editData.leetcodeUsername || ''} 
-                      onChange={e => setEditData({...editData, leetcodeUsername: e.target.value})} 
+                      value={editData.leetcodeUsername || ''}
+                      onChange={e => setEditData({ ...editData, leetcodeUsername: e.target.value })}
                       placeholder="leetcode-username"
                     />
                   </div>
                   <div className="input-group">
                     <label>Codeforces Username</label>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       id="profile-codeforces"
                       name="codeforcesUsername"
-                      value={editData.codeforcesUsername || ''} 
-                      onChange={e => setEditData({...editData, codeforcesUsername: e.target.value})} 
+                      value={editData.codeforcesUsername || ''}
+                      onChange={e => setEditData({ ...editData, codeforcesUsername: e.target.value })}
                       placeholder="codeforces-username"
                     />
                   </div>
                   <div className="input-group">
                     <label>LinkedIn</label>
-                    <input 
-                      type="text" 
-                      value={editData.socialLinks?.linkedin || ''} 
-                      onChange={e => setEditData({...editData, socialLinks: { ...editData.socialLinks, linkedin: e.target.value }})} 
+                    <input
+                      type="text"
+                      value={editData.socialLinks?.linkedin || ''}
+                      onChange={e => setEditData({ ...editData, socialLinks: { ...editData.socialLinks, linkedin: e.target.value } })}
                       placeholder="LinkedIn URL"
                     />
                   </div>
                   <div className="input-group">
                     <label>Twitter</label>
-                    <input 
-                      type="text" 
-                      value={editData.socialLinks?.twitter || ''} 
-                      onChange={e => setEditData({...editData, socialLinks: { ...editData.socialLinks, twitter: e.target.value }})} 
+                    <input
+                      type="text"
+                      value={editData.socialLinks?.twitter || ''}
+                      onChange={e => setEditData({ ...editData, socialLinks: { ...editData.socialLinks, twitter: e.target.value } })}
                       placeholder="Twitter URL"
                     />
                   </div>
                   <div className="input-group">
                     <label>Portfolio</label>
-                    <input 
-                      type="text" 
-                      value={editData.socialLinks?.portfolio || ''} 
-                      onChange={e => setEditData({...editData, socialLinks: { ...editData.socialLinks, portfolio: e.target.value }})} 
+                    <input
+                      type="text"
+                      value={editData.socialLinks?.portfolio || ''}
+                      onChange={e => setEditData({ ...editData, socialLinks: { ...editData.socialLinks, portfolio: e.target.value } })}
                       placeholder="Portfolio URL"
                     />
                   </div>
@@ -1332,10 +1432,10 @@ const Profile = () => {
 
                 <div className="input-group" style={{ marginTop: '1.5rem' }}>
                   <label>Interests (comma separated)</label>
-                  <input 
-                    type="text" 
-                    value={Array.isArray(editData.interests) ? editData.interests.join(', ') : editData.interests || ''} 
-                    onChange={e => setEditData({...editData, interests: e.target.value.split(',').map(s => s.trim())})} 
+                  <input
+                    type="text"
+                    value={Array.isArray(editData.interests) ? editData.interests.join(', ') : editData.interests || ''}
+                    onChange={e => setEditData({ ...editData, interests: e.target.value.split(',').map(s => s.trim()) })}
                     placeholder="e.g. react, javascript, ai, open-source"
                   />
                   <p style={{ fontSize: '0.75rem', color: 'var(--text-light)', marginTop: '4px' }}>Used to personalize your smart feed.</p>

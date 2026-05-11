@@ -14,7 +14,7 @@ const Settings = () => {
     url: user?.url || '',
     company: user?.company || '',
     location: user?.location || '',
-    socials: user?.socials || { github: '', twitter: '', linkedin: '' }
+    socialLinks: user?.socialLinks || { github: '', twitter: '', linkedin: '' }
   });
 
   const sidebarItems = [
@@ -42,8 +42,9 @@ const Settings = () => {
       await updateProfile(formData);
       alert('Profile updated successfully!');
     } catch (err) {
-      console.error(err);
-      alert('Failed to update profile');
+      console.error('Update Failed:', err.response?.data || err.message);
+      const msg = err.response?.data?.message || 'Failed to update profile';
+      alert(`Error: ${msg}`);
     }
   };
 

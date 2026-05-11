@@ -43,28 +43,46 @@ const processAgentTask = async (req, res) => {
       challenges: challenges.map(c => ({ title: c.title, difficulty: c.difficulty }))
     };
 
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    // Simple predefined training for common questions
+    const taskLower = task.toLowerCase();
+    let response = "";
 
-    const systemPrompt = `
-      You are "CodeSphere AI", a highly intelligent and helpful AI agent integrated into the CodeSphere platform.
-      CodeSphere is a social hub for developers, featuring job boards, coding challenges, and messaging.
-      
-      Your goal is to help users with any task within the application.
-      You must learn from previous interactions provided in the context.
-      
-      Current App State:
-      ${JSON.stringify(appState, null, 2)}
-      
-      ${historyContext}
-      
-      User's current task: ${task}
-      
-      Respond in a helpful, professional, yet friendly tone. If the task involves something you can't directly do, explain how the user can do it in the app.
-      If you are suggesting a feature, mention why it suits the user based on their skills or history.
-    `;
+    if (taskLower.includes("who are you") || taskLower.includes("your name")) {
+      response = "I am CodeSphere AI, your dedicated assistant. I'm here to help you navigate the platform, find jobs, and grow as a developer!";
+    } else if (taskLower.includes("what is codesphere")) {
+      response = "CodeSphere is a social hub built for developers. You can share your projects, connect with other developers, find job opportunities, and challenge yourself with coding competitions!";
+    } else if (taskLower.includes("earn points") || taskLower.includes("how to get points")) {
+      response = `You can earn points by completing coding challenges and being active in the community. Currently, you have ${appState.user.points} points. Keep going!`;
+    } else if (taskLower.includes("find a job") || taskLower.includes("look for jobs")) {
+      response = "You can find job opportunities in our 'Jobs' section. I can also recommend jobs based on your skills! Would you like me to show you some React or Javascript roles?";
+    } else if (taskLower.includes("how are you")) {
+      response = "I'm doing great! I'm ready to help you with your coding journey. How can I assist you today?";
+    }
 
-    const result = await model.generateContent(systemPrompt);
-    const response = result.response.text();
+    if (!response) {
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+      const systemPrompt = `
+        You are "CodeSphere AI", a highly intelligent and helpful AI agent integrated into the CodeSphere platform.
+        CodeSphere is a social hub for developers, featuring job boards, coding challenges, and messaging.
+        
+        Your goal is to help users with any task within the application.
+        You must learn from previous interactions provided in the context.
+        
+        Current App State:
+        ${JSON.stringify(appState, null, 2)}
+        
+        ${historyContext}
+        
+        User's current task: ${task}
+        
+        Respond in a helpful, professional, yet friendly tone. If the task involves something you can't directly do, explain how the user can do it in the app.
+        If you are suggesting a feature, mention why it suits the user based on their skills or history.
+      `;
+
+      const result = await model.generateContent(systemPrompt);
+      response = result.response.text();
+    }
 
     // Save history for learning
     const newHistory = new AgentHistory({

@@ -87,9 +87,9 @@ const AIAgent = () => {
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, y: 100, scale: 0.8 }}
+            initial={{ opacity: 0, y: -100, scale: 0.8 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 100, scale: 0.8 }}
+            exit={{ opacity: 0, y: -100, scale: 0.8 }}
             className="ai-agent-container"
           >
             {/* Header */}
@@ -101,7 +101,7 @@ const AIAgent = () => {
               <div className="flex gap-2">
                 <button 
                   onClick={() => setView(view === 'chat' ? 'history' : 'chat')}
-                  className="p-1 hover:bg-gray-700 rounded transition-colors"
+                  className="p-1 hover:bg-white/20 rounded transition-colors"
                   title={view === 'chat' ? 'View History' : 'Back to Chat'}
                 >
                   {view === 'chat' ? <History size={20} /> : <MessageSquare size={20} />}
@@ -117,10 +117,10 @@ const AIAgent = () => {
               {view === 'chat' ? (
                 <>
                   {messages.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-full text-center p-6 text-gray-400">
+                    <div className="flex flex-col items-center justify-center h-full text-center p-6 text-gray-500">
                       <Bot size={48} className="mb-4 opacity-20" />
                       <p>Hello! I'm your CodeSphere AI Agent. How can I help you today?</p>
-                      <p className="text-xs mt-2">Try: "Find me some React jobs" or "Explain my profile points"</p>
+                      <p className="text-xs mt-2">Try: "Who are you?", "What is CodeSphere?", or "How can I earn points?"</p>
                     </div>
                   ) : (
                     messages.map((msg, idx) => (
@@ -139,14 +139,14 @@ const AIAgent = () => {
                 </>
               ) : (
                 <div className="p-4">
-                  <h4 className="text-sm font-semibold mb-3 border-b border-gray-700 pb-1">Task History</h4>
+                  <h4 className="text-sm font-semibold mb-3 border-b border-gray-200 pb-1">Task History</h4>
                   {history.length === 0 ? (
                     <p className="text-xs text-gray-500">No previous tasks yet.</p>
                   ) : (
                     <div className="flex flex-col gap-3">
                       {history.map((item, idx) => (
                         <div key={idx} className="history-item">
-                          <p className="text-xs font-medium text-blue-400">Task: {item.task}</p>
+                          <p className="text-xs font-medium text-blue-600">Task: {item.task}</p>
                           <p className="text-[10px] text-gray-500 mt-1 line-clamp-2">{item.response}</p>
                         </div>
                       ))}

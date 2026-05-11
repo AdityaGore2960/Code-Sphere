@@ -19,6 +19,7 @@ const io = new Server(server, {
     methods: ["GET", "POST"]
   }
 });
+app.set('io', io);
 
 // Enable CORS - Must be before body parsers to handle errors correctly
 app.use(cors());
@@ -66,11 +67,11 @@ io.on('connection', (socket) => {
 
   socket.on('setup', (userData) => {
     socket.join(userData._id);
-    users.set(userData._id, { 
-        socketId: socket.id, 
-        userId: userData._id,
-        username: userData.username, 
-        profilePic: userData.profilePic 
+    users.set(userData._id, {
+      socketId: socket.id,
+      userId: userData._id,
+      username: userData.username,
+      profilePic: userData.profilePic
     });
     socket.emit('connected');
     io.emit('online_users_list', Array.from(users.values()));
@@ -126,7 +127,10 @@ io.on('connection', (socket) => {
 // Error Handler
 app.use((err, req, res, next) => {
   const statusCode = res.statusCode === 200 ? 500 : res.statusCode;
+  console.error(`[ERROR] ${new Date().toISOString()} - ${req.method} ${req.url}`);
+  console.error('Stack:', err.stack);
   res.status(statusCode).json({
+    success: false,
     message: err.message,
     stack: process.env.NODE_ENV === 'production' ? null : err.stack,
   });

@@ -22,6 +22,9 @@ const UserSchema = new mongoose.Schema({
     file: String
   }],
   resume: { type: String, default: '' },
+  company: { type: String, default: '' },
+  location: { type: String, default: '' },
+  url: { type: String, default: '' },
   socialLinks: {
     github: String,
     linkedin: String,

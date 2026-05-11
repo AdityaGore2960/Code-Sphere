@@ -43,18 +43,21 @@ export const AuthProvider = ({ children }) => {
   };
 
   const updateProfile = async (profileData) => {
-    // If profileData is FormData, axios automatically handles the content-type
-    const { data } = await axios.put('users/profile', profileData);
-    
-    // Support both direct user object and { success, user } structure from server
-    const updatedUserObj = data.user || data;
-    
-    // Merge existing user data (like token) with new profile data
-    const mergedUser = { ...user, ...updatedUserObj };
-    
-    setUser(mergedUser);
-    localStorage.setItem('user', JSON.stringify(mergedUser));
-    return updatedUserObj;
+    try {
+      const { data } = await axios.put('users/profile', profileData);
+
+      const updatedUserObj = data.user || data;
+
+      // Update local state and storage with merged data
+      const mergedUser = { ...user, ...updatedUserObj };
+      setUser(mergedUser);
+      localStorage.setItem('user', JSON.stringify(mergedUser));
+
+      return updatedUserObj;
+    } catch (err) {
+      console.error('AuthContext Update Error:', err.response?.data || err.message);
+      throw err;
+    }
   };
 
   return (

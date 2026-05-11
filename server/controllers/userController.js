@@ -20,10 +20,20 @@ const getProfile = async (req, res) => {
 
 // @desc    Update user profile
 // @route   PUT /api/users/profile
-const updateProfile = async (req, res) => {
+const updateProfile = async (req, res, next) => {
   try {
+    console.log('--- Profile Update Started ---');
+    console.log('Request Body:', req.body);
+
     const user = await User.findById(req.user._id);
-    if (!user) return res.status(404).json({ message: 'User not found' });
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+    // Helper for safe JSON parsing
+    const safeParse = (data) => {
+      if (!data) return undefined;
+      if (typeof data !== 'string') return data;
+      try { return JSON.parse(data); } catch (e) { return undefined; }
+    };
 
     let profilePicUrl = user.profilePic;
     let bannerUrl = user.banner;
@@ -35,7 +45,7 @@ const updateProfile = async (req, res) => {
       const getFile = (name) => req.files.find(f => f.fieldname === name);
 
       const profilePicFile = getFile('profilePic');
-      if (profilePicFile) {
+      if (profilePicFile && isCloudinaryConfigured) {
         const b64 = Buffer.from(profilePicFile.buffer).toString("base64");
         const dataURI = "data:" + profilePicFile.mimetype + ";base64," + b64;
         const uploadResponse = await cloudinary.uploader.upload(dataURI, { folder: 'codesphere_profiles' });
@@ -43,7 +53,7 @@ const updateProfile = async (req, res) => {
       }
 
       const bannerFile = getFile('banner');
-      if (bannerFile) {
+      if (bannerFile && isCloudinaryConfigured) {
         const b64 = Buffer.from(bannerFile.buffer).toString("base64");
         const dataURI = "data:" + bannerFile.mimetype + ";base64," + b64;
         const uploadResponse = await cloudinary.uploader.upload(dataURI, { folder: 'codesphere_banners' });
@@ -51,10 +61,10 @@ const updateProfile = async (req, res) => {
       }
 
       const resumeFile = getFile('resume');
-      if (resumeFile) {
+      if (resumeFile && isCloudinaryConfigured) {
         const b64 = Buffer.from(resumeFile.buffer).toString("base64");
         const dataURI = "data:" + resumeFile.mimetype + ";base64," + b64;
-        const uploadResponse = await cloudinary.uploader.upload(dataURI, { 
+        const uploadResponse = await cloudinary.uploader.upload(dataURI, {
           folder: 'codesphere_resumes',
           resource_type: 'raw'
         });
@@ -89,34 +99,34 @@ const updateProfile = async (req, res) => {
     user.profilePic = profilePicUrl;
     user.banner = bannerUrl;
 
-    user.name = req.body.name !== undefined ? req.body.name : user.name;
-    user.headline = req.body.headline !== undefined ? req.body.headline : user.headline;
-    user.bio = req.body.bio !== undefined ? req.body.bio : user.bio;
-    user.pronouns = req.body.pronouns !== undefined ? req.body.pronouns : user.pronouns;
-    
-    // Parse complex fields
-    if (req.body.experience) {
-      user.experience = typeof req.body.experience === 'string' ? JSON.parse(req.body.experience) : req.body.experience;
-    }
-    if (req.body.education) {
-      user.education = typeof req.body.education === 'string' ? JSON.parse(req.body.education) : req.body.education;
-    }
-    if (req.body.skills) {
-      user.skills = typeof req.body.skills === 'string' ? JSON.parse(req.body.skills) : req.body.skills;
-    }
+    // Simple fields
+    const simpleFields = ['name', 'headline', 'bio', 'pronouns', 'githubUsername', 'leetcodeUsername', 'codeforcesUsername', 'company', 'location', 'url'];
+    simpleFields.forEach(field => {
+      if (req.body[field] !== undefined) user[field] = req.body[field];
+    });
+
+    // Parse complex fields safely
+    user.experience = safeParse(req.body.experience) || user.experience;
+    user.education = safeParse(req.body.education) || user.education;
+    user.skills = safeParse(req.body.skills) || user.skills;
+    user.interests = safeParse(req.body.interests) || user.interests;
+
+    // Handle social links from multiple possible field names
+    const socialData = safeParse(req.body.socialLinks) || safeParse(req.body.socials);
+    if (socialData) user.socialLinks = { ...user.socialLinks, ...socialData };
 
     // Handle Certifications and their potential files
     if (req.body.certifications) {
       let certs = typeof req.body.certifications === 'string' ? JSON.parse(req.body.certifications) : req.body.certifications;
-      
+
       if (req.files && Array.isArray(req.files)) {
         for (let i = 0; i < certs.length; i++) {
           const fieldName = `certFile_${i}`;
           const certFile = req.files.find(f => f.fieldname === fieldName);
-          if (certFile) {
+          if (certFile && isCloudinaryConfigured) {
             const b64 = Buffer.from(certFile.buffer).toString("base64");
             const dataURI = "data:" + certFile.mimetype + ";base64," + b64;
-            const uploadResponse = await cloudinary.uploader.upload(dataURI, { 
+            const uploadResponse = await cloudinary.uploader.upload(dataURI, {
               folder: 'codesphere_certifications',
               resource_type: 'raw'
             });
@@ -127,7 +137,7 @@ const updateProfile = async (req, res) => {
       user.certifications = certs;
     }
 
-    const handlesChanged = 
+    const handlesChanged =
       (req.body.githubUsername !== undefined && req.body.githubUsername !== user.githubUsername) ||
       (req.body.leetcodeUsername !== undefined && req.body.leetcodeUsername !== user.leetcodeUsername) ||
       (req.body.codeforcesUsername !== undefined && req.body.codeforcesUsername !== user.codeforcesUsername);
@@ -136,13 +146,19 @@ const updateProfile = async (req, res) => {
       user.codingStats = undefined; // Force refresh on next fetch
     }
 
-    user.githubUsername = req.body.githubUsername !== undefined ? req.body.githubUsername : user.githubUsername;
-    user.leetcodeUsername = req.body.leetcodeUsername !== undefined ? req.body.leetcodeUsername : user.leetcodeUsername;
-    user.codeforcesUsername = req.body.codeforcesUsername !== undefined ? req.body.codeforcesUsername : user.codeforcesUsername;
-    user.socialLinks = req.body.socialLinks ? (typeof req.body.socialLinks === 'string' ? JSON.parse(req.body.socialLinks) : req.body.socialLinks) : user.socialLinks;
-    user.interests = req.body.interests ? (typeof req.body.interests === 'string' ? JSON.parse(req.body.interests) : req.body.interests) : user.interests;
+    // Redundant interests/socials blocks removed and handled above
+    console.log('User model updated, saving...');
+
+    console.log('User object prepared for save:', {
+      id: user._id,
+      name: user.name,
+      skills: user.skills,
+      hasExperience: !!user.experience,
+      hasEducation: !!user.education
+    });
 
     const savedUser = await user.save();
+    console.log('--- Profile Update Success ---');
 
     const updatedUser = await User.findById(savedUser._id)
       .select('-password')
@@ -151,8 +167,7 @@ const updateProfile = async (req, res) => {
 
     res.json({ success: true, user: updatedUser });
   } catch (error) {
-    console.error('Update Profile Error:', error);
-    res.status(500).json({ message: error.message || 'Internal Server Error' });
+    next(error);
   }
 };
 

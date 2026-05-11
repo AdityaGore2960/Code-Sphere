@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Heart, MessageCircle, Share2, Bookmark, Code, ExternalLink, MoreVertical, Book, Star, GitFork, Calendar, Check, UserPlus, Trash2, AlertTriangle, X } from 'lucide-react';
+import { Heart, MessageCircle, Share2, Bookmark, Code, ExternalLink, MoreVertical, Book, Star, GitFork, Calendar, Check, UserPlus, Trash2, AlertTriangle, X, Mail, Link as LinkIcon, Send } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
 import { useAuth } from '../context/AuthContext';
@@ -16,6 +16,50 @@ const PostCard = ({ post, onDelete }) => {
   const [isFollowing, setIsFollowing] = useState(user.following?.includes(post.user._id));
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showShareMenu, setShowShareMenu] = useState(false);
+
+  const postUrl = `${window.location.origin}/profile/${post.user.username}`; // Fallback to profile as individual post pages might not exist
+  const shareText = `Check out ${post.user.username}'s post on CodeSphere: "${post.content.substring(0, 100)}${post.content.length > 100 ? '...' : ''}"`;
+
+  const shareOptions = [
+    {
+      name: 'WhatsApp',
+      color: '#25D366',
+      icon: <Send size={18} />,
+      action: () => {
+        window.open(`https://wa.me/?text=${encodeURIComponent(shareText + ' ' + postUrl)}`, '_blank');
+        setShowShareMenu(false);
+      }
+    },
+    {
+      name: 'LinkedIn',
+      color: '#0077b5',
+      icon: <ExternalLink size={18} />,
+      action: () => {
+        window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(postUrl)}`, '_blank');
+        setShowShareMenu(false);
+      }
+    },
+    {
+      name: 'Email',
+      color: '#ea4335',
+      icon: <Mail size={18} />,
+      action: () => {
+        window.location.href = `mailto:?subject=CodeSphere Post Share&body=${encodeURIComponent(shareText + '\n\n' + postUrl)}`;
+        setShowShareMenu(false);
+      }
+    },
+    {
+      name: 'Copy Link',
+      color: 'var(--primary)',
+      icon: <LinkIcon size={18} />,
+      action: () => {
+        navigator.clipboard.writeText(postUrl);
+        alert('Link copied to clipboard!');
+        setShowShareMenu(false);
+      }
+    }
+  ];
 
   const isOwner = user && (post.user._id === user._id || post.user === user._id);
 
@@ -117,14 +161,14 @@ const PostCard = ({ post, onDelete }) => {
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           {post.isProject && <span className="badge badge-project">Project</span>}
           {isOwner && (
-            <button 
+            <button
               onClick={handleDeleteClick}
               disabled={isDeleting}
-              style={{ 
-                background: 'transparent', 
-                border: 'none', 
-                cursor: 'pointer', 
-                padding: '0.5rem', 
+              style={{
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                padding: '0.5rem',
                 borderRadius: '50%',
                 display: 'flex',
                 alignItems: 'center',
@@ -149,24 +193,24 @@ const PostCard = ({ post, onDelete }) => {
 
       {/* Multi-Image Grid */}
       {post.images && post.images.length > 0 && (
-        <div style={{ 
-            display: 'grid', 
-            gridTemplateColumns: post.images.length === 1 ? '1fr' : post.images.length === 2 ? '1fr 1fr' : '1fr 1fr', 
-            gap: '2px', 
-            marginBottom: '1.25rem', 
-            borderRadius: '10px', 
-            overflow: 'hidden', 
-            border: '1px solid var(--border)' 
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: post.images.length === 1 ? '1fr' : post.images.length === 2 ? '1fr 1fr' : '1fr 1fr',
+          gap: '2px',
+          marginBottom: '1.25rem',
+          borderRadius: '10px',
+          overflow: 'hidden',
+          border: '1px solid var(--border)'
         }}>
           {post.images.map((img, idx) => (
             <img
               key={idx}
               src={img}
               crossOrigin="anonymous"
-              style={{ 
-                  width: '100%', 
-                  height: post.images.length > 2 ? '200px' : '400px', 
-                  objectFit: 'cover' 
+              style={{
+                width: '100%',
+                height: post.images.length > 2 ? '200px' : '400px',
+                objectFit: 'cover'
               }}
               alt={`Post attachment ${idx + 1}`}
             />
@@ -307,9 +351,67 @@ const PostCard = ({ post, onDelete }) => {
             <MessageCircle size={20} />
             <span style={{ fontSize: '0.9rem' }}>{comments.length}</span>
           </button>
-          <button style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-            <Share2 size={20} />
-          </button>
+          <div style={{ position: 'relative' }}>
+            <button
+              onClick={() => setShowShareMenu(!showShareMenu)}
+              style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: showShareMenu ? 'var(--primary)' : 'inherit' }}
+            >
+              <Share2 size={20} />
+            </button>
+
+            <AnimatePresence>
+              {showShareMenu && (
+                <>
+                  <div
+                    style={{ position: 'fixed', inset: 0, zIndex: 99 }}
+                    onClick={() => setShowShareMenu(false)}
+                  />
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    style={{
+                      position: 'absolute',
+                      bottom: '100%',
+                      left: '0',
+                      marginBottom: '0.5rem',
+                      background: 'white',
+                      borderRadius: '12px',
+                      boxShadow: 'var(--shadow-lg)',
+                      border: '1px solid var(--border)',
+                      padding: '0.5rem',
+                      zIndex: 100,
+                      minWidth: '180px'
+                    }}
+                  >
+                    <p style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-light)', padding: '0.5rem', borderBottom: '1px solid var(--border)', marginBottom: '0.25rem' }}>Share Post</p>
+                    {shareOptions.map(option => (
+                      <button
+                        key={option.name}
+                        onClick={option.action}
+                        className="menu-item-hover"
+                        style={{
+                          width: '100%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.75rem',
+                          padding: '0.6rem 0.75rem',
+                          borderRadius: '8px',
+                          color: 'var(--text)',
+                          fontSize: '0.9rem',
+                          textAlign: 'left',
+                          transition: 'var(--transition)'
+                        }}
+                      >
+                        <span style={{ color: option.color, display: 'flex' }}>{option.icon}</span>
+                        {option.name}
+                      </button>
+                    ))}
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
         <button>
           <Bookmark size={20} />
@@ -345,73 +447,73 @@ const PostCard = ({ post, onDelete }) => {
       {/* Delete Confirmation Modal */}
       <AnimatePresence>
         {showDeleteModal && (
-          <div style={{ 
-            position: 'fixed', 
-            top: 0, 
-            left: 0, 
-            right: 0, 
-            bottom: 0, 
-            background: 'rgba(0,0,0,0.4)', 
-            backdropFilter: 'blur(4px)', 
-            zIndex: 3000, 
-            display: 'flex', 
-            justifyContent: 'center', 
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0,0,0,0.4)',
+            backdropFilter: 'blur(4px)',
+            zIndex: 3000,
+            display: 'flex',
+            justifyContent: 'center',
             alignItems: 'center',
             padding: '1rem'
           }}>
-            <motion.div 
-              initial={{ scale: 0.9, opacity: 0, y: 20 }} 
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="card" 
-              style={{ 
-                width: '100%', 
-                maxWidth: '400px', 
-                padding: '2rem', 
+              className="card"
+              style={{
+                width: '100%',
+                maxWidth: '400px',
+                padding: '2rem',
                 textAlign: 'center',
                 boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
                 border: '1px solid var(--border)',
                 background: '#fff'
               }}
             >
-              <div style={{ 
-                width: '60px', 
-                height: '60px', 
-                borderRadius: '50%', 
-                background: '#fee2e2', 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center', 
+              <div style={{
+                width: '60px',
+                height: '60px',
+                borderRadius: '50%',
+                background: '#fee2e2',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
                 margin: '0 auto 1.5rem',
                 color: '#ef4444'
               }}>
                 <AlertTriangle size={30} />
               </div>
-              
+
               <h3 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '0.75rem', color: '#1e293b' }}>
                 Delete Post?
               </h3>
-              
+
               <p style={{ color: 'var(--text-light)', marginBottom: '2rem', lineHeight: 1.5 }}>
                 This action cannot be undone. This will permanently remove this post and all its interactions.
               </p>
-              
+
               <div style={{ display: 'flex', gap: '1rem' }}>
-                <button 
-                  onClick={() => setShowDeleteModal(false)} 
-                  className="btn btn-outline" 
+                <button
+                  onClick={() => setShowDeleteModal(false)}
+                  className="btn btn-outline"
                   style={{ flex: 1, padding: '0.75rem' }}
                   disabled={isDeleting}
                 >
                   Cancel
                 </button>
-                <button 
-                  onClick={confirmDelete} 
-                  className="btn btn-primary" 
-                  style={{ 
-                    flex: 1, 
-                    padding: '0.75rem', 
-                    background: '#ef4444', 
+                <button
+                  onClick={confirmDelete}
+                  className="btn btn-primary"
+                  style={{
+                    flex: 1,
+                    padding: '0.75rem',
+                    background: '#ef4444',
                     borderColor: '#ef4444',
                     display: 'flex',
                     alignItems: 'center',
@@ -423,15 +525,15 @@ const PostCard = ({ post, onDelete }) => {
                   {isDeleting ? 'Deleting...' : <><Trash2 size={18} /> Delete</>}
                 </button>
               </div>
-              
-              <button 
+
+              <button
                 onClick={() => setShowDeleteModal(false)}
-                style={{ 
-                  position: 'absolute', 
-                  top: '1rem', 
-                  right: '1rem', 
-                  padding: '0.4rem', 
-                  borderRadius: '50%', 
+                style={{
+                  position: 'absolute',
+                  top: '1rem',
+                  right: '1rem',
+                  padding: '0.4rem',
+                  borderRadius: '50%',
                   cursor: 'pointer',
                   color: 'var(--text-light)'
                 }}

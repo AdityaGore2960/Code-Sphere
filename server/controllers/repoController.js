@@ -52,4 +52,40 @@ const getAllRepos = async (req, res) => {
   }
 };
 
-module.exports = { createRepo, getUserRepos, getAllRepos };
+const getRepoByName = async (req, res) => {
+  try {
+    const User = require('../models/User');
+    const user = await User.findOne({ username: req.params.username });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const repo = await Repo.findOne({ owner: user._id, name: req.params.repoName })
+      .populate('owner', 'username profilePic');
+
+    if (!repo) return res.status(404).json({ message: 'Repository not found' });
+
+    res.json(repo);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const deleteRepo = async (req, res) => {
+  try {
+    const repo = await Repo.findById(req.params.id);
+    if (!repo) return res.status(404).json({ message: 'Repository not found' });
+
+    // Check ownership
+    if (repo.owner.toString() !== req.user._id.toString()) {
+      return res.status(401).json({ message: 'User not authorized' });
+    }
+
+    await repo.deleteOne();
+    res.json({ message: 'Repository removed' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+module.exports = { createRepo, getUserRepos, getAllRepos, getRepoByName, deleteRepo };
+
+

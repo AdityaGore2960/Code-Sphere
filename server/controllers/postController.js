@@ -23,10 +23,10 @@ const createPost = async (req, res) => {
     let imagesUrls = [];
     let videoUrl = '';
 
-    const isCloudinaryConfigured = process.env.CLOUDINARY_CLOUD_NAME && 
-                                  !process.env.CLOUDINARY_CLOUD_NAME.includes('your_') &&
-                                  process.env.CLOUDINARY_API_KEY &&
-                                  !process.env.CLOUDINARY_API_KEY.includes('your_');
+    const isCloudinaryConfigured = process.env.CLOUDINARY_CLOUD_NAME &&
+      !process.env.CLOUDINARY_CLOUD_NAME.includes('your_') &&
+      process.env.CLOUDINARY_API_KEY &&
+      !process.env.CLOUDINARY_API_KEY.includes('your_');
 
     if (req.files) {
       if (isCloudinaryConfigured) {
@@ -54,9 +54,9 @@ const createPost = async (req, res) => {
           const file = req.files['video'][0];
           const b64 = Buffer.from(file.buffer).toString('base64');
           const dataURI = "data:" + file.mimetype + ";base64," + b64;
-          const uploadResponse = await cloudinary.uploader.upload(dataURI, { 
+          const uploadResponse = await cloudinary.uploader.upload(dataURI, {
             folder: 'codesphere_videos',
-            resource_type: 'video' 
+            resource_type: 'video'
           });
           videoUrl = uploadResponse.secure_url;
         }
@@ -80,7 +80,7 @@ const createPost = async (req, res) => {
 
     // Extract tags from content (hashtags)
     const contentTags = postContent.match(/#(\w+)/g)?.map(tag => tag.substring(1).toLowerCase()) || [];
-    
+
     // Merge with techStack if project
     const allTags = [...new Set([...contentTags, ...(Array.isArray(techStack) ? techStack : [])])];
 
@@ -113,7 +113,7 @@ const createPost = async (req, res) => {
   } catch (error) {
     console.error('--- Create Post Error ---');
     console.error(error);
-    res.status(500).json({ 
+    res.status(500).json({
       message: 'Internal Server Error while creating post',
       error: error.message,
       stack: process.env.NODE_ENV === 'production' ? null : error.stack

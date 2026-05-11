@@ -17,7 +17,9 @@ import Notifications from './pages/Notifications';
 import Search from './pages/Search';
 import CreateRepo from './pages/CreateRepo';
 import Repositories from './pages/Repositories';
+import RepositoryDetail from './pages/RepositoryDetail';
 import SettingsPage from './pages/Settings';
+import Jobs from './pages/Jobs';
 
 const ProtectedRoute = ({ children }) => {
   const { user } = useAuth();
@@ -44,7 +46,9 @@ const App = () => {
                   <Route path="/search" element={<ProtectedRoute><Search /></ProtectedRoute>} />
                   <Route path="/create-repo" element={<ProtectedRoute><CreateRepo /></ProtectedRoute>} />
                   <Route path="/repositories" element={<ProtectedRoute><Repositories /></ProtectedRoute>} />
+                  <Route path="/repo/:username/:repoName" element={<ProtectedRoute><RepositoryDetail /></ProtectedRoute>} />
                   <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+                  <Route path="/jobs" element={<ProtectedRoute><Jobs /></ProtectedRoute>} />
                 </Routes>
               </main>
               <MessagingDrawer />
@@ -58,4 +62,3 @@ const App = () => {
 };
 
 export default App;
-

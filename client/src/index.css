@@ -406,7 +406,7 @@ button {
 /* AI Agent Styles */
 .ai-agent-fab {
   position: fixed;
-  bottom: 2rem;
+  top: 6rem;
   right: 2rem;
   width: 60px;
   height: 60px;
@@ -424,24 +424,24 @@ button {
 
 .ai-agent-container {
   position: fixed;
-  bottom: 6rem;
+  top: 10rem;
   right: 2rem;
   width: 380px;
   height: 500px;
-  background: #1a1b1e;
-  border: 1px solid #2d2e32;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
   border-radius: 16px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow-lg);
   z-index: 1000;
 }
 
 .ai-agent-header {
   padding: 1rem;
-  background: #25262b;
-  border-bottom: 1px solid #2d2e32;
+  background: var(--primary);
+  border-bottom: 1px solid var(--border);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -474,26 +474,26 @@ button {
 
 .message-bubble.agent {
   align-self: flex-start;
-  background: #2d2e32;
-  color: #e4e5e7;
+  background: var(--primary-light);
+  color: var(--text);
   border-bottom-left-radius: 2px;
 }
 
 .ai-agent-footer {
   padding: 1rem;
-  background: #25262b;
-  border-top: 1px solid #2d2e32;
+  background: var(--card-bg);
+  border-top: 1px solid var(--border);
   display: flex;
   gap: 0.5rem;
 }
 
 .ai-agent-input {
   flex: 1;
-  background: #1a1b1e !important;
-  border: 1px solid #373a40 !important;
+  background: var(--bg) !important;
+  border: 1px solid var(--border) !important;
   border-radius: 8px !important;
   padding: 0.6rem 1rem !important;
-  color: white !important;
+  color: var(--text) !important;
   outline: none !important;
 }
 
@@ -524,9 +524,9 @@ button {
 }
 
 .history-item {
-  background: #25262b;
+  background: var(--primary-light);
   padding: 0.8rem;
   border-radius: 8px;
-  border-left: 3px solid #6366f1;
+  border-left: 3px solid var(--primary);
   margin-bottom: 0.5rem;
 }
