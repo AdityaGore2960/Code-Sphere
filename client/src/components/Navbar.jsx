@@ -22,20 +22,25 @@ const Navbar = () => {
   const [unreadCount, setUnreadCount] = useState(0);
 
   const fetchUnreadCount = async () => {
+    if (!user?.token) return; // Guard: don't fetch without a valid token
     try {
-      const { data } = await axios.get('notifications');
+      const { data } = await axios.get('/api/notifications');
       const count = data.filter(n => !n.isRead).length;
       setUnreadCount(count);
     } catch (err) {
-      console.error(err);
+      if (err.response?.status !== 401) {
+        console.error('Notification fetch error:', err);
+      }
     }
   };
 
   useEffect(() => {
-    if (user) {
+    if (user?.token) {
       fetchUnreadCount();
-      const interval = setInterval(fetchUnreadCount, 30000); // Check every 30s
+      const interval = setInterval(fetchUnreadCount, 30000);
       return () => clearInterval(interval);
+    } else {
+      setUnreadCount(0);
     }
   }, [user]);
 

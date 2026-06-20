@@ -19,4 +19,13 @@ export default defineConfig({
   optimizeDeps: {
     include: ['simple-peer', 'socket.io-client', 'buffer'],
   },
+  // Dev server proxy — forwards /api/* to Express at port 5000
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+      },
+    },
+  },
 })

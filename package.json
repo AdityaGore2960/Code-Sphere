@@ -1,0 +1,21 @@
+{
+  "name": "codesphere",
+  "version": "1.0.0",
+  "description": "CodeSphere – Developer Social Network",
+  "main": "server/index.js",
+  "scripts": {
+    "install:all": "npm install && cd server && npm install && cd ../client && npm install",
+    "dev:server": "cd server && npm run dev",
+    "dev:client": "cd client && npm run dev",
+    "build": "cd client && npm run build",
+    "start": "cd server && npm start",
+    "seed": "cd server && npm run seed",
+    "postinstall": ""
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": ["developer", "social", "coding", "platform"],
+  "author": "",
+  "license": "MIT"
+}

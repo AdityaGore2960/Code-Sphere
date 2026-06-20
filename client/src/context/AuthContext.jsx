@@ -5,22 +5,41 @@ const AuthContext = createContext();
 
 export const useAuth = () => useContext(AuthContext);
 
+// ─── Set baseURL once at module level (not inside a component) ───────
+axios.defaults.baseURL = 'http://localhost:5000/api';
+
+// ─── Restore auth token SYNCHRONOUSLY on module load ─────────────────
+// This ensures the very first request (e.g. Navbar fetching notifications)
+// already has the Authorization header — fixing the 401 race condition.
+try {
+  const savedUser = JSON.parse(localStorage.getItem('user'));
+  if (savedUser?.token) {
+    axios.defaults.headers.common['Authorization'] = `Bearer ${savedUser.token}`;
+  }
+} catch (_) {
+  localStorage.removeItem('user');
+}
+
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  // Initialize axios base URL
-  axios.defaults.baseURL = 'http://localhost:5000/api';
-
-  useEffect(() => {
-    const savedUser = localStorage.getItem('user');
-    if (savedUser) {
-      const userData = JSON.parse(savedUser);
-      setUser(userData);
-      axios.defaults.headers.common['Authorization'] = `Bearer ${userData.token}`;
+  // Initialize user state synchronously from localStorage
+  const [user, setUser] = useState(() => {
+    try {
+      const raw = localStorage.getItem('user');
+      return raw ? JSON.parse(raw) : null;
+    } catch (_) {
+      return null;
     }
-    setLoading(false);
-  }, []);
+  });
+  const [loading, setLoading] = useState(false);
+
+  // Keep axios Authorization header in sync whenever user changes
+  useEffect(() => {
+    if (user?.token) {
+      axios.defaults.headers.common['Authorization'] = `Bearer ${user.token}`;
+    } else {
+      delete axios.defaults.headers.common['Authorization'];
+    }
+  }, [user]);
 
   const login = async (email, password) => {
     const { data } = await axios.post('auth/login', { email, password });

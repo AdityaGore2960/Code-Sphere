@@ -110,6 +110,6 @@ CodeSphere utilizes a **Modular Monolith** pattern:
 
 ## 📬 Contact
 
-Aditya Gore - [GitHub](https://github.com/AdityaGore2960) | [LinkedIn](https://linkedin.com/in/your-profile)
+Aditya Gore - [GitHub](https://github.com/AdityaGore2960) | [LinkedIn](www.linkedin.com/in/aditya-gore-370897333)
 
 Project Link: [https://github.com/AdityaGore2960/Code-Sphere](https://github.com/AdityaGore2960/Code-Sphere)
