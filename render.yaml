@@ -9,10 +9,8 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-      - key: PORT
-        value: 5000
       - key: MONGO_URI
-        sync: false   # Set this in Render dashboard
+        sync: false
       - key: JWT_SECRET
         sync: false
       - key: CLOUDINARY_CLOUD_NAME
@@ -23,18 +21,5 @@ services:
         sync: false
       - key: GEMINI_API_KEY
         sync: false
-
-  # ─── Frontend (Vite React) ────────────────────────────────────────
-  - type: web
-    name: codesphere-client
-    env: static
-    rootDir: client
-    buildCommand: npm install && npm run build
-    staticPublishPath: dist
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
-    envVars:
-      - key: VITE_API_URL
-        value: https://codesphere-server.onrender.com
+      - key: GITHUB_TOKEN
+        sync: false
