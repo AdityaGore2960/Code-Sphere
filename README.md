@@ -113,3 +113,23 @@ CodeSphere utilizes a **Modular Monolith** pattern:
 Aditya Gore - [GitHub](https://github.com/AdityaGore2960) | [LinkedIn](www.linkedin.com/in/aditya-gore-370897333)
 
 Project Link: [https://github.com/AdityaGore2960/Code-Sphere](https://github.com/AdityaGore2960/Code-Sphere)
+
+<!---LeetCode Topics Start-->
+# LeetCode Topics
+## Array
+|  |
+| ------- |
+| [0049-group-anagrams](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0049-group-anagrams) |
+## Hash Table
+|  |
+| ------- |
+| [0049-group-anagrams](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0049-group-anagrams) |
+## String
+|  |
+| ------- |
+| [0049-group-anagrams](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0049-group-anagrams) |
+## Sorting
+|  |
+| ------- |
+| [0049-group-anagrams](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0049-group-anagrams) |
+<!---LeetCode Topics End-->
