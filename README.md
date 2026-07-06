@@ -138,4 +138,8 @@ Project Link: [https://github.com/AdityaGore2960/Code-Sphere](https://github.com
 |  |
 | ------- |
 | [0076-minimum-window-substring](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0076-minimum-window-substring) |
+## Linked List
+|  |
+| ------- |
+| [0083-remove-duplicates-from-sorted-list](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0083-remove-duplicates-from-sorted-list) |
 <!---LeetCode Topics End-->
