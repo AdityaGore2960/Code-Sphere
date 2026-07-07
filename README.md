@@ -126,6 +126,7 @@ Project Link: [https://github.com/AdityaGore2960/Code-Sphere](https://github.com
 | [0049-group-anagrams](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0049-group-anagrams) |
 | [0076-minimum-window-substring](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0076-minimum-window-substring) |
 | [0141-linked-list-cycle](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0141-linked-list-cycle) |
+| [0142-linked-list-cycle-ii](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0142-linked-list-cycle-ii) |
 ## String
 |  |
 | ------- |
@@ -145,6 +146,7 @@ Project Link: [https://github.com/AdityaGore2960/Code-Sphere](https://github.com
 | [0021-merge-two-sorted-lists](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0021-merge-two-sorted-lists) |
 | [0083-remove-duplicates-from-sorted-list](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0083-remove-duplicates-from-sorted-list) |
 | [0141-linked-list-cycle](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0141-linked-list-cycle) |
+| [0142-linked-list-cycle-ii](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0142-linked-list-cycle-ii) |
 ## Recursion
 |  |
 | ------- |
@@ -153,4 +155,5 @@ Project Link: [https://github.com/AdityaGore2960/Code-Sphere](https://github.com
 |  |
 | ------- |
 | [0141-linked-list-cycle](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0141-linked-list-cycle) |
+| [0142-linked-list-cycle-ii](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0142-linked-list-cycle-ii) |
 <!---LeetCode Topics End-->
