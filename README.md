@@ -137,6 +137,7 @@ Project Link: [https://github.com/AdityaGore2960/Code-Sphere](https://github.com
 |  |
 | ------- |
 | [0049-group-anagrams](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0049-group-anagrams) |
+| [0148-sort-list](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0148-sort-list) |
 ## Sliding Window
 |  |
 | ------- |
@@ -148,6 +149,7 @@ Project Link: [https://github.com/AdityaGore2960/Code-Sphere](https://github.com
 | [0083-remove-duplicates-from-sorted-list](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0083-remove-duplicates-from-sorted-list) |
 | [0141-linked-list-cycle](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0141-linked-list-cycle) |
 | [0142-linked-list-cycle-ii](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0142-linked-list-cycle-ii) |
+| [0148-sort-list](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0148-sort-list) |
 ## Recursion
 |  |
 | ------- |
@@ -157,9 +159,18 @@ Project Link: [https://github.com/AdityaGore2960/Code-Sphere](https://github.com
 | ------- |
 | [0141-linked-list-cycle](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0141-linked-list-cycle) |
 | [0142-linked-list-cycle-ii](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0142-linked-list-cycle-ii) |
+| [0148-sort-list](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0148-sort-list) |
 | [0202-happy-number](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0202-happy-number) |
 ## Math
 |  |
 | ------- |
 | [0202-happy-number](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0202-happy-number) |
+## Divide and Conquer
+|  |
+| ------- |
+| [0148-sort-list](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0148-sort-list) |
+## Merge Sort
+|  |
+| ------- |
+| [0148-sort-list](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0148-sort-list) |
 <!---LeetCode Topics End-->
