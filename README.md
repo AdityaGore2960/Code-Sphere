@@ -152,11 +152,13 @@ Project Link: [https://github.com/AdityaGore2960/Code-Sphere](https://github.com
 | [0142-linked-list-cycle-ii](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0142-linked-list-cycle-ii) |
 | [0148-sort-list](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0148-sort-list) |
 | [0206-reverse-linked-list](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0206-reverse-linked-list) |
+| [0234-palindrome-linked-list](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0234-palindrome-linked-list) |
 ## Recursion
 |  |
 | ------- |
 | [0021-merge-two-sorted-lists](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0021-merge-two-sorted-lists) |
 | [0206-reverse-linked-list](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0206-reverse-linked-list) |
+| [0234-palindrome-linked-list](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0234-palindrome-linked-list) |
 ## Two Pointers
 |  |
 | ------- |
@@ -164,6 +166,7 @@ Project Link: [https://github.com/AdityaGore2960/Code-Sphere](https://github.com
 | [0142-linked-list-cycle-ii](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0142-linked-list-cycle-ii) |
 | [0148-sort-list](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0148-sort-list) |
 | [0202-happy-number](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0202-happy-number) |
+| [0234-palindrome-linked-list](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0234-palindrome-linked-list) |
 ## Math
 |  |
 | ------- |
@@ -176,4 +179,8 @@ Project Link: [https://github.com/AdityaGore2960/Code-Sphere](https://github.com
 |  |
 | ------- |
 | [0148-sort-list](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0148-sort-list) |
+## Stack
+|  |
+| ------- |
+| [0234-palindrome-linked-list](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0234-palindrome-linked-list) |
 <!---LeetCode Topics End-->
