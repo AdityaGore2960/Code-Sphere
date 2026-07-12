@@ -146,6 +146,7 @@ Project Link: [https://github.com/AdityaGore2960/Code-Sphere](https://github.com
 |  |
 | ------- |
 | [0021-merge-two-sorted-lists](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0021-merge-two-sorted-lists) |
+| [0025-reverse-nodes-in-k-group](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0025-reverse-nodes-in-k-group) |
 | [0083-remove-duplicates-from-sorted-list](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0083-remove-duplicates-from-sorted-list) |
 | [0092-reverse-linked-list-ii](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0092-reverse-linked-list-ii) |
 | [0141-linked-list-cycle](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0141-linked-list-cycle) |
@@ -158,6 +159,7 @@ Project Link: [https://github.com/AdityaGore2960/Code-Sphere](https://github.com
 |  |
 | ------- |
 | [0021-merge-two-sorted-lists](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0021-merge-two-sorted-lists) |
+| [0025-reverse-nodes-in-k-group](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0025-reverse-nodes-in-k-group) |
 | [0143-reorder-list](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0143-reorder-list) |
 | [0206-reverse-linked-list](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0206-reverse-linked-list) |
 | [0234-palindrome-linked-list](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0234-palindrome-linked-list) |
