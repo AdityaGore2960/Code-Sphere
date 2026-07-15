@@ -120,6 +120,7 @@ Project Link: [https://github.com/AdityaGore2960/Code-Sphere](https://github.com
 |  |
 | ------- |
 | [0049-group-anagrams](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0049-group-anagrams) |
+| [0121-best-time-to-buy-and-sell-stock](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0121-best-time-to-buy-and-sell-stock) |
 ## Hash Table
 |  |
 | ------- |
@@ -189,4 +190,8 @@ Project Link: [https://github.com/AdityaGore2960/Code-Sphere](https://github.com
 | ------- |
 | [0143-reorder-list](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0143-reorder-list) |
 | [0234-palindrome-linked-list](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0234-palindrome-linked-list) |
+## Dynamic Programming
+|  |
+| ------- |
+| [0121-best-time-to-buy-and-sell-stock](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0121-best-time-to-buy-and-sell-stock) |
 <!---LeetCode Topics End-->
