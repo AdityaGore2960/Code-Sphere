@@ -121,6 +121,7 @@ Project Link: [https://github.com/AdityaGore2960/Code-Sphere](https://github.com
 | ------- |
 | [0049-group-anagrams](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0049-group-anagrams) |
 | [0121-best-time-to-buy-and-sell-stock](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0121-best-time-to-buy-and-sell-stock) |
+| [0238-product-of-array-except-self](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0238-product-of-array-except-self) |
 ## Hash Table
 |  |
 | ------- |
@@ -194,4 +195,8 @@ Project Link: [https://github.com/AdityaGore2960/Code-Sphere](https://github.com
 |  |
 | ------- |
 | [0121-best-time-to-buy-and-sell-stock](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0121-best-time-to-buy-and-sell-stock) |
+## Prefix Sum
+|  |
+| ------- |
+| [0238-product-of-array-except-self](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0238-product-of-array-except-self) |
 <!---LeetCode Topics End-->
