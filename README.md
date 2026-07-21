@@ -195,6 +195,7 @@ Project Link: [https://github.com/AdityaGore2960/Code-Sphere](https://github.com
 |  |
 | ------- |
 | [0143-reorder-list](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0143-reorder-list) |
+| [0232-implement-queue-using-stacks](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0232-implement-queue-using-stacks) |
 | [0234-palindrome-linked-list](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0234-palindrome-linked-list) |
 ## Dynamic Programming
 |  |
@@ -204,4 +205,12 @@ Project Link: [https://github.com/AdityaGore2960/Code-Sphere](https://github.com
 |  |
 | ------- |
 | [0238-product-of-array-except-self](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0238-product-of-array-except-self) |
+## Design
+|  |
+| ------- |
+| [0232-implement-queue-using-stacks](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0232-implement-queue-using-stacks) |
+## Queue
+|  |
+| ------- |
+| [0232-implement-queue-using-stacks](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0232-implement-queue-using-stacks) |
 <!---LeetCode Topics End-->
