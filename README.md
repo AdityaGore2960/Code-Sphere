@@ -120,6 +120,7 @@ Project Link: [https://github.com/AdityaGore2960/Code-Sphere](https://github.com
 |  |
 | ------- |
 | [0049-group-anagrams](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0049-group-anagrams) |
+| [0084-largest-rectangle-in-histogram](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0084-largest-rectangle-in-histogram) |
 | [0121-best-time-to-buy-and-sell-stock](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0121-best-time-to-buy-and-sell-stock) |
 | [0189-rotate-array](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0189-rotate-array) |
 | [0238-product-of-array-except-self](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0238-product-of-array-except-self) |
@@ -194,6 +195,7 @@ Project Link: [https://github.com/AdityaGore2960/Code-Sphere](https://github.com
 ## Stack
 |  |
 | ------- |
+| [0084-largest-rectangle-in-histogram](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0084-largest-rectangle-in-histogram) |
 | [0143-reorder-list](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0143-reorder-list) |
 | [0232-implement-queue-using-stacks](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0232-implement-queue-using-stacks) |
 | [0234-palindrome-linked-list](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0234-palindrome-linked-list) |
@@ -213,4 +215,8 @@ Project Link: [https://github.com/AdityaGore2960/Code-Sphere](https://github.com
 |  |
 | ------- |
 | [0232-implement-queue-using-stacks](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0232-implement-queue-using-stacks) |
+## Monotonic Stack
+|  |
+| ------- |
+| [0084-largest-rectangle-in-histogram](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0084-largest-rectangle-in-histogram) |
 <!---LeetCode Topics End-->
