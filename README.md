@@ -138,6 +138,7 @@ Project Link: [https://github.com/AdityaGore2960/Code-Sphere](https://github.com
 | [0049-group-anagrams](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0049-group-anagrams) |
 | [0076-minimum-window-substring](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0076-minimum-window-substring) |
 | [0151-reverse-words-in-a-string](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0151-reverse-words-in-a-string) |
+| [1541-minimum-insertions-to-balance-a-parentheses-string](https://github.com/AdityaGore2960/Code-Sphere/tree/master/1541-minimum-insertions-to-balance-a-parentheses-string) |
 ## Sorting
 |  |
 | ------- |
@@ -199,6 +200,7 @@ Project Link: [https://github.com/AdityaGore2960/Code-Sphere](https://github.com
 | [0143-reorder-list](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0143-reorder-list) |
 | [0232-implement-queue-using-stacks](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0232-implement-queue-using-stacks) |
 | [0234-palindrome-linked-list](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0234-palindrome-linked-list) |
+| [1541-minimum-insertions-to-balance-a-parentheses-string](https://github.com/AdityaGore2960/Code-Sphere/tree/master/1541-minimum-insertions-to-balance-a-parentheses-string) |
 ## Dynamic Programming
 |  |
 | ------- |
@@ -219,4 +221,8 @@ Project Link: [https://github.com/AdityaGore2960/Code-Sphere](https://github.com
 |  |
 | ------- |
 | [0084-largest-rectangle-in-histogram](https://github.com/AdityaGore2960/Code-Sphere/tree/master/0084-largest-rectangle-in-histogram) |
+## Greedy
+|  |
+| ------- |
+| [1541-minimum-insertions-to-balance-a-parentheses-string](https://github.com/AdityaGore2960/Code-Sphere/tree/master/1541-minimum-insertions-to-balance-a-parentheses-string) |
 <!---LeetCode Topics End-->
